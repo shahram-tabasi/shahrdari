@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>گزارش</title>
+  <style>
+    @font-face {
+      font-family: 'Vazirmatn';
+      src: local('Vazirmatn'), local('Vazir'), local('Tahoma');
+    }
+    body { font-family: 'Vazirmatn', Tahoma, sans-serif; margin: 20px; color:#222 }
+    .header { text-align: center; margin-bottom: 12px }
+    .meta { color:#666; font-size:12px }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f5f7fa; text-align: right }
+    td { text-align: right }
+    .logo { max-height: 48px }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <!-- You can replace /assets/logo.png with your logo path -->
+    <% if (typeof logoUrl !== 'undefined' && logoUrl) { %>
+      <div><img src="<%= logoUrl %>" class="logo" alt="logo"/></div>
+    <% } %>
+    <h1>گزارش</h1>
+    <div class="meta"><%= new Date().toLocaleString('fa-IR') %></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>ردیف</th><th>عنوان</th><th>مقدار</th></tr>
+    </thead>
+    <tbody>
+      <% if (Array.isArray(data) && data.length) { %>
+        <% data.forEach((row, i) => { %>
+          <tr>
+            <td><%= i + 1 %></td>
+            <td><%= row.title ?? '' %></td>
+            <td><%= row.value ?? '' %></td>
+          </tr>
+        <% }) %>
+      <% } else { %>
+        <tr><td colspan="3" style="text-align:center">هیچ داده‌ای برای نمایش وجود ندارد.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</body>
+</html>

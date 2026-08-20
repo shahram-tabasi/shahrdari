@@ -1,0 +1,27 @@
+{
+  "name": "shahrdari-backend",
+  "version": "1.0.0",
+  "description": "Municipality Decision Support System Backend",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "ejs": "^6.0.1",
+    "exceljs": "^4.4.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.0",
+    "openai": "^5.20.2",
+    "pptxgenjs": "^4.0.1",
+    "puppeteer": "^25.5.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.76"
+  }
+}

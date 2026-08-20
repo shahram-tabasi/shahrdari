@@ -1,0 +1,215 @@
+/* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE, ABOVE THE TAILWIND IMPORTS — DO NOT DELETE THIS COMMENT */
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap');
+
+/* CRITICAL: THE FOLLOWING TAILWIND IMPORTS MUST NEVER BE DELETED OR REORDERED — DO NOT DELETE THIS COMMENT */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* END TAILWIND IMPORTS — ALL OTHER CSS MUST GO BELOW THIS LINE */
+
+@import 'leaflet/dist/leaflet.css';
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+body {
+  font-family: 'Vazirmatn', system-ui, sans-serif;
+  background-color: #f5f7fa;
+  -webkit-font-smoothing: antialiased;
+}
+.dark body {
+  background-color: #121212;
+}
+/* ——— Range input (weight & budget sliders) ——— */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(26, 35, 126, 0.12);
+}
+.dark input[type='range']::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.12);
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  height: 20px;
+  width: 20px;
+  border-radius: 999px;
+  background: #ff8f00;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(255, 143, 0, 0.45);
+}
+.dark input[type='range']::-webkit-slider-thumb {
+  border-color: #1f2229;
+}
+input[type='range'].track-navy::-webkit-slider-thumb {
+  background: #1a237e;
+  box-shadow: 0 2px 8px rgba(26, 35, 126, 0.4);
+}
+.dark input[type='range'].track-navy::-webkit-slider-thumb {
+  background: #9fa8da;
+}
+input[type='range'].budget::-webkit-slider-runnable-track {
+  height: 14px;
+}
+input[type='range'].budget::-webkit-slider-thumb {
+  height: 32px;
+  width: 32px;
+  margin-top: -9px;
+}
+/* ——— Scrollbars ——— */
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(26, 35, 126, 0.18);
+  border-radius: 999px;
+}
+.dark .thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+}
+/* ——— Leaflet dark surface ——— */
+.leaflet-container {
+  background: #0d0f14;
+  font-family: 'Vazirmatn', system-ui, sans-serif;
+}
+.leaflet-tooltip.justice-tip {
+  background: rgba(18, 18, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #f2f3f7;
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+.leaflet-tooltip.justice-tip::before {
+  display: none;
+}
+.leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.5) !important;
+  color: #8b90a0 !important;
+}
+.leaflet-control-attribution a {
+  color: #a7adc4 !important;
+}
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+}
+.live-dot {
+  animation: pulseDot 1.6s ease-in-out infinite;
+}
+
+/* AI Markdown output */
+.ai-markdown {
+  font-family: 'B Nazanin', 'BNazanin', 'Vazirmatn', Tahoma, sans-serif;
+  font-size: 1.15rem;
+  line-height: 2;
+  overflow-wrap: anywhere;
+}
+.ai-markdown > :first-child {
+  margin-top: 0;
+}
+.ai-markdown > :last-child {
+  margin-bottom: 0;
+}
+.ai-markdown h1,
+.ai-markdown h2,
+.ai-markdown h3 {
+  margin: 1.35em 0 0.55em;
+  font-weight: 700;
+  line-height: 1.6;
+}
+.ai-markdown h1 { font-size: 1.65em; }
+.ai-markdown h2 { font-size: 1.4em; }
+.ai-markdown h3 { font-size: 1.2em; }
+.ai-markdown p,
+.ai-markdown ul,
+.ai-markdown ol,
+.ai-markdown blockquote,
+.ai-markdown pre {
+  margin: 0.8em 0;
+}
+.ai-markdown ul,
+.ai-markdown ol {
+  padding-right: 1.6em;
+}
+.ai-markdown ul { list-style: disc; }
+.ai-markdown ol { list-style: decimal; }
+.ai-markdown li { margin: 0.3em 0; }
+.ai-markdown strong { font-weight: 700; }
+.ai-markdown a {
+  color: #f59e0b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ai-markdown blockquote {
+  border-right: 4px solid #ff8f00;
+  padding: 0.65em 1em;
+  background: rgba(255, 143, 0, 0.08);
+}
+.ai-markdown table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  text-align: right;
+}
+.ai-markdown th,
+.ai-markdown td {
+  padding: 0.65em 0.85em;
+  border-bottom: 1px solid rgba(26, 35, 126, 0.1);
+}
+.ai-markdown th {
+  background: rgba(26, 35, 126, 0.07);
+  font-weight: 700;
+}
+.dark .ai-markdown th,
+.dark .ai-markdown td {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.dark .ai-markdown th {
+  background: rgba(255, 255, 255, 0.07);
+}
+.ai-markdown pre {
+  direction: ltr;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: #111827;
+  padding: 1em;
+  color: #e5e7eb;
+  text-align: left;
+}
+.ai-markdown :not(pre) > code {
+  direction: ltr;
+  display: inline-block;
+  border-radius: 0.35rem;
+  background: rgba(26, 35, 126, 0.09);
+  padding: 0 0.35em;
+  font-family: Consolas, monospace;
+  font-size: 0.82em;
+}
+.dark .ai-markdown :not(pre) > code {
+  background: rgba(255, 255, 255, 0.1);
+}
+.ai-markdown .ai-chart text,
+.ai-markdown .ai-chart .recharts-legend-item-text {
+  font-family: 'B Nazanin', 'BNazanin', Tahoma, sans-serif;
+}
