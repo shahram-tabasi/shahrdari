@@ -118,12 +118,14 @@ function explainForeignReply(result, port) {
   return anotherNodeApp
     ? 'The reply carries no X-Request-Id but does carry X-Powered-By, which this\n' +
         '        API strips. A DIFFERENT Node/Express application is holding this port.\n' +
-        '        Find and stop it:\n' +
-        `          Windows : netstat -ano | findstr :${port}\n` +
-        '                    tasklist /FI "PID eq <pid>"\n' +
-        '                    taskkill /PID <pid> /F\n' +
+        '        These commands take no editing — run them as-is.\n' +
+        '        See what it is:\n' +
+        `          Windows : Get-Process -Id (Get-NetTCPConnection -LocalPort ${port} -State Listen | Select-Object -ExpandProperty OwningProcess -Unique) | Format-List Id, ProcessName, Path\n` +
         `          macOS   : lsof -nP -iTCP:${port} -sTCP:LISTEN\n` +
         `          Linux   : ss -lntp | grep :${port}\n` +
+        '        Stop it, once you are sure you do not need it:\n' +
+        `          Windows : Stop-Process -Id (Get-NetTCPConnection -LocalPort ${port} -State Listen | Select-Object -ExpandProperty OwningProcess -Unique) -Force\n` +
+        `          macOS / Linux : kill $(lsof -t -iTCP:${port} -sTCP:LISTEN)\n` +
         "        Then start this project's backend again."
     : 'The reply carries no X-Request-Id, so this API did not write it.\n' +
         '        Either another program holds this port, or software on this machine\n' +
