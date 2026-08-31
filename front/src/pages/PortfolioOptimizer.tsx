@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   BookmarkPlusIcon,
@@ -13,8 +13,8 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { BudgetDonut } from '../components/optimizer/BudgetDonut';
 import { useData } from '../contexts/DataContext';
-import type { CriterionKey } from '../types';
-import { rankProjects } from '../utils/scoring';
+import type { ConstraintViolation, CriterionKey, PortfolioResult } from '../types';
+import { optimizePortfolio } from '../services/api';
 import { faNum, faPercent, faShortBudget } from '../utils/format';
 
 export function PortfolioOptimizer() {
@@ -39,28 +39,74 @@ export function PortfolioOptimizer() {
   const [forced, setForced] = useState<Record<string, boolean>>({});
   const [activeScenario, setActiveScenario] = useState('s2');
 
-  const ranked = useMemo(() => rankProjects(projects, weights), [projects, weights]);
+  /**
+   * The portfolio comes from the backend optimiser, never from a client-side
+   * greedy walk down the ranking.
+   *
+   * This page used to fill the budget by taking projects in rank order until
+   * the money ran out. پیوست شماره دو rules that out explicitly — «رتبه بالاتر
+   * یک پروژه الزاماً به معنای عضویت آن در سبد نهایی نیست» — because a greedy
+   * pass cannot honour dependencies, regional equity, execution capacity or
+   * the policy minimums, and cannot notice that two cheaper projects beat one
+   * expensive higher-ranked one.
+   */
+  const [portfolio, setPortfolio] = useState<PortfolioResult | null>(null);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizeError, setOptimizeError] = useState<string | null>(null);
 
-  /** انتخاب حریصانه بر اساس رتبه، با احتساب دخالت دستی مدیر */
-  const { selected, used } = useMemo(() => {
-    let spent = 0;
-    const picked = new Set<string>();
-    ranked.forEach((p) => {
-      const manual = forced[p.id];
-      if (manual === false) return;
-      const fits = spent + p.budget <= cap;
-      if (manual === true || fits) {
-        picked.add(p.id);
-        spent += p.budget;
-      }
-    });
-    return { selected: picked, used: spent };
-  }, [ranked, cap, forced]);
+  const runOptimizer = useCallback(async () => {
+    setOptimizing(true);
+    setOptimizeError(null);
 
-  const justiceAvg =
-  ranked.
-  filter((p) => selected.has(p.id)).
-  reduce((a, p) => a + p.justice, 0) / (selected.size || 1);
+    try {
+      const include = Object.entries(forced)
+        .filter(([, pinned]) => pinned === true)
+        .map(([id]) => id);
+      const exclude = Object.entries(forced)
+        .filter(([, pinned]) => pinned === false)
+        .map(([id]) => id);
+
+      setPortfolio(
+        await optimizePortfolio({
+          budget: cap,
+          weights,
+          includeProjectIds: include,
+          excludeProjectIds: exclude
+        })
+      );
+    } catch (error) {
+      setOptimizeError(
+        error instanceof Error ? error.message : 'بهینه‌سازی سبد ناموفق بود.'
+      );
+      setPortfolio(null);
+    } finally {
+      setOptimizing(false);
+    }
+  }, [cap, weights, forced]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => void runOptimizer(), 400);
+
+    return () => clearTimeout(timer);
+  }, [runOptimizer]);
+
+  const ranked = useMemo(
+    () => portfolio?.projects ?? [],
+    [portfolio]
+  );
+
+  const selected = useMemo(
+    () => new Set((portfolio?.projects ?? []).map((project) => project.id)),
+    [portfolio]
+  );
+
+  const used = portfolio?.usedBudget ?? 0;
+
+  const justiceAvg = portfolio?.equity.equityScore ?? 0;
+
+  /** Constraints the current budget cannot satisfy. */
+  const violations: ConstraintViolation[] =
+    portfolio?.optimization.violations ?? [];
 
   return (
     <div className="space-y-6">
@@ -81,9 +127,9 @@ export function PortfolioOptimizer() {
               <LayersIcon size={13} />
               {faNum(selected.size)} پروژه در سبد
             </Badge>
-            <Badge tone={justiceAvg >= 0.72 ? 'green' : 'amber'}>
+            <Badge tone={portfolio?.equity.satisfied ? 'green' : 'amber'}>
               <ScaleIcon size={13} />
-              ضریب عدالت {faNum(justiceAvg, 2)}
+              سهم مناطق هدف {faPercent(portfolio?.equity.actualSharePercent ?? 0)}
             </Badge>
             <button
               type="button"
@@ -109,6 +155,41 @@ export function PortfolioOptimizer() {
           <span>{faNum(800)}</span>
           <span>{faNum(totalPool)}</span>
         </div>
+
+        {optimizing ? (
+          <p className="mt-4 text-[11px] font-bold text-ink-500 dark:text-white/45">
+            در حال تشکیل سبد تحت محدودیت‌ها…
+          </p>
+        ) : null}
+
+        {optimizeError ? (
+          <p className="mt-4 rounded-lg bg-rose-500/10 px-4 py-2.5 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+            {optimizeError}
+          </p>
+        ) : null}
+
+        {portfolio?.status === 'infeasible' ? (
+          <div className="mt-4 rounded-lg bg-rose-500/10 px-4 py-3">
+            <p className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
+              با این سقف بودجه هیچ سبد سازگاری وجود ندارد؛ فهرست زیر صرفاً
+              تشخیصی است و پیشنهاد اجرا نیست.
+            </p>
+            {portfolio.optimization.infeasibility ? (
+              <p className="mt-1.5 text-[11px] leading-6 text-ink-700 dark:text-white/70">
+                {portfolio.optimization.infeasibility.message}
+              </p>
+            ) : null}
+            <ul className="mt-2 space-y-1">
+              {violations.map((violation) => (
+                <li
+                  key={violation.rule}
+                  className="text-[10px] leading-5 text-ink-700 dark:text-white/60">
+                  • {violation.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
@@ -187,7 +268,7 @@ export function PortfolioOptimizer() {
             icon={<LayersIcon size={17} />}
             action={
             <Badge tone="neutral">
-                {faNum(ranked.length - selected.size)} پروژه خارج از سبد
+                {faNum(portfolio?.rejected.length ?? 0)} پروژه خارج از سبد
               </Badge>
             } />
           
@@ -229,7 +310,7 @@ export function PortfolioOptimizer() {
                       <StarIcon size={12} className="text-amber-500" fill="currentColor" /> :
                       null}
                       <span className="text-[10px] font-bold text-ink-500 dark:text-white/40">
-                        رتبه {faNum(p.rank)}
+                        {p.rank === null ? 'مسیر مستقل' : `رتبه ${faNum(p.rank)}`}
                       </span>
                     </span>
                   </div>
@@ -246,7 +327,7 @@ export function PortfolioOptimizer() {
                     <div className="text-left">
                       <p className="text-[10px] text-ink-500 dark:text-white/40">امتیاز</p>
                       <p className="text-xs font-extrabold text-amber-600 dark:text-amber-400">
-                        {faNum(p.finalScore, 1)}
+                        {p.finalScore === null ? '—' : faNum(p.finalScore, 1)}
                       </p>
                     </div>
                   </div>

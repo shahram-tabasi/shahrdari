@@ -1,3 +1,17 @@
+# Secrets — never commit a filled-in environment file.
+.env
+.env.*
+!.env.example
 backend/.env
+
+# Dependencies
 **/node_modules/
 node_modules/
+
+# Build output
+front/dist/
+
+# Audit log sink. These records are operational data and may contain actor
+# identifiers; they belong in the central log system, not in version control.
+**/var/audit/
+var/

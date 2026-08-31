@@ -20,6 +20,25 @@ export async function getAllCriteria(req, res, next) {
 }
 
 /**
+ * Retrieve the full criteria model: dimensions, preferential criteria and the
+ * mandatory gates.
+ */
+export async function getCriteriaModel(req, res, next) {
+  try {
+    const model = await criteriaService.getCriteriaModel();
+
+    res.status(200).json(
+      successResponse({
+        message: "مدل معیارهای شیوه‌نامه بازیابی شد.",
+        data: model
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * Retrieve a criterion by its identifier.
  */
 export async function getCriterionById(req, res, next) {

@@ -1,22 +1,33 @@
 import { Router } from "express";
 
+import { PERMISSION } from "../config/roles.js";
 import * as neighborhoodController from "../controllers/neighborhood.controller.js";
+import { authenticate, authorize } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-/**
- * Retrieve all neighborhoods.
- */
-router.get("/", neighborhoodController.getAllNeighborhoods);
+router.use(authenticate());
+
+router.get(
+  "/",
+  authorize(PERMISSION.PROJECT_READ),
+  neighborhoodController.getAllNeighborhoods
+);
+router.get(
+  "/:id",
+  authorize(PERMISSION.PROJECT_READ),
+  neighborhoodController.getNeighborhoodById
+);
 
 /**
- * Retrieve a neighborhood by its identifier.
+ * Neighborhood data feeds the deprivation index, which drives the regional
+ * equity constraint — replacing it changes portfolio outcomes, so it is an
+ * administrative act.
  */
-router.get("/:id", neighborhoodController.getNeighborhoodById);
-
-/**
- * Replace the entire neighborhood collection.
- */
-router.put("/", neighborhoodController.replaceNeighborhoods);
+router.put(
+  "/",
+  authorize(PERMISSION.SYSTEM_ADMIN),
+  neighborhoodController.replaceNeighborhoods
+);
 
 export default router;

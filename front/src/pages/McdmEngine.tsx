@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { WeightSliders } from '../components/mcdm/WeightSliders';
 import { RankingTable } from '../components/mcdm/RankingTable';
 import { RadarPanel } from '../components/mcdm/RadarPanel';
@@ -7,32 +7,77 @@ import { ExpertModeModal } from '../components/mcdm/ExpertModeModal';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
 import { useData } from '../contexts/DataContext';
-import type { CriterionKey } from '../types';
-import {
-  rankProjects,
-  rebalanceWeights,
-  type RankedProject } from
-'../utils/scoring';
+import type { CriterionKey, RankedProject } from '../types';
+import { createRanking } from '../services/api';
+import { previewRanking, rebalanceWeights } from '../utils/scoring';
 import { faNum, faPercent } from '../utils/format';
 
 export function McdmEngine() {
   const { criteria, projects } = useData();
-  const [weights, setWeights] = useState<Record<CriterionKey, number>>(() =>
-    criteria.reduce(
-      (acc, criterion) => ({ ...acc, [criterion.key]: criterion.weight }),
-      {} as Record<CriterionKey, number>
-    )
+
+  /** The شیوه‌نامه's own default weights, as served by the backend. */
+  const initialWeights = useMemo(
+    () =>
+      criteria.reduce(
+        (acc, criterion) => ({ ...acc, [criterion.key]: criterion.weight }),
+        {} as Record<CriterionKey, number>
+      ),
+    [criteria]
   );
+
+  const [weights, setWeights] = useState<Record<CriterionKey, number>>(initialWeights);
   const [manualOrder, setManualOrder] = useState<string[]>([]);
   const [radarProject, setRadarProject] = useState<RankedProject | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [expertOpen, setExpertOpen] = useState(false);
 
-  const rows = useMemo(
-    () => rankProjects(projects, weights, manualOrder),
-    [projects, weights, manualOrder]
-  );
+  /**
+   * The authoritative ranking is PROMETHEE II on the backend. While the
+   * sliders move we show a local weighted-sum preview so the table responds
+   * immediately, then replace it with the real ranking once the request
+   * returns. The two can differ — a weighted sum has no preference thresholds
+   * and no pairwise flows — so the table is labelled while a preview is shown.
+   */
+  const [ranked, setRanked] = useState<RankedProject[] | null>(null);
+  const [ranking, setRanking] = useState(false);
+
+  const refreshRanking = useCallback(async () => {
+    setRanking(true);
+
+    try {
+      const result = await createRanking({ weights });
+
+      setRanked(result.projects);
+    } catch {
+      // Fall back to the local preview; the backend error surfaces through
+      // DataContext's own error handling on the next data refresh.
+      setRanked(null);
+    } finally {
+      setRanking(false);
+    }
+  }, [weights]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => void refreshRanking(), 350);
+
+    return () => clearTimeout(timer);
+  }, [refreshRanking]);
+
+  const rows = useMemo(() => {
+    const base =
+      ranked ??
+      (previewRanking(projects, weights) as unknown as RankedProject[]);
+
+    if (manualOrder.length === 0) {
+      return base;
+    }
+
+    return [...base].sort(
+      (left, right) =>
+        manualOrder.indexOf(left.id) - manualOrder.indexOf(right.id)
+    );
+  }, [ranked, projects, weights, manualOrder]);
 
   const toggleCompare = (id: string) =>
   setCompareIds((prev) =>
@@ -43,7 +88,9 @@ export function McdmEngine() {
   [...prev, id]
   );
 
-  const [a, b] = compareIds.map((id) => rows.find((r) => r.id === id) ?? null);
+  const [a, b] = compareIds.map(
+    (id) => rows.find((row: RankedProject) => row.id === id) ?? null
+  );
 
   return (
     <div className="space-y-6">
@@ -58,6 +105,13 @@ export function McdmEngine() {
         }}
         onExpertMode={() => setExpertOpen(true)} />
       
+
+      {ranked === null ? (
+        <p className="rounded-lg bg-amber-500/10 px-4 py-2.5 text-[11px] font-bold text-amber-700 dark:text-amber-400">
+          نمای پیش‌نمایش (مجموع وزنی) نمایش داده می‌شود؛ رتبه‌بندی رسمی با روش
+          PROMETHEE II از موتور رتبه‌بندی دریافت می‌شود{ranking ? '…' : '.'}
+        </p>
+      ) : null}
 
       <RankingTable
         rows={rows}
@@ -77,7 +131,11 @@ export function McdmEngine() {
         title={radarProject?.name ?? ''}
         subtitle={
         radarProject ?
-        `${radarProject.id} • ${radarProject.district} • رتبه ${faNum(radarProject.rank)} • امتیاز نهایی ${faNum(radarProject.finalScore, 1)}` :
+        `${radarProject.id} • ${radarProject.district} • ${
+          radarProject.rank === null
+            ? 'خارج از ماتریس مقایسه'
+            : `رتبه ${faNum(radarProject.rank)} • امتیاز نهایی ${faNum(radarProject.finalScore ?? 0, 1)}`
+        }` :
         undefined
         }>
         
@@ -130,10 +188,10 @@ export function McdmEngine() {
               
                   <div className="flex items-center justify-between gap-2">
                     <Badge tone={i === 0 ? 'navy' : 'amber'}>
-                      رتبه {faNum(p.rank)}
+                      {p.rank === null ? 'مسیر مستقل' : `رتبه ${faNum(p.rank)}`}
                     </Badge>
                     <span className="text-sm font-extrabold text-ink-900 dark:text-white/90">
-                      {faNum(p.finalScore, 1)}
+                      {faNum(p.finalScore ?? 0, 1)}
                     </span>
                   </div>
                   <p className="mt-2 text-xs font-bold leading-5 text-ink-900 dark:text-white/85">
@@ -145,7 +203,8 @@ export function McdmEngine() {
                 </div>
             )}
               <div className="rounded-lg bg-canvas p-4 text-[11px] leading-6 text-ink-700 dark:bg-white/5 dark:text-white/70">
-                اختلاف امتیاز نهایی: <b>{faNum(Math.abs(a.finalScore - b.finalScore), 1)}</b>{' '}
+                اختلاف امتیاز نهایی:{' '}
+                <b>{faNum(Math.abs((a.finalScore ?? 0) - (b.finalScore ?? 0)), 1)}</b>{' '}
                 واحد — بیشترین شکاف در معیار{' '}
                 <b>
                   {

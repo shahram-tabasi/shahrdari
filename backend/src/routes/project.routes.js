@@ -1,32 +1,23 @@
 import { Router } from "express";
 
+import { PERMISSION } from "../config/roles.js";
 import * as projectController from "../controllers/project.controller.js";
+import { authenticate, authorize } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-/**
- * Get all projects.
- */
-router.get("/", projectController.getAllProjects);
+router.use(authenticate());
 
 /**
- * Get project by identifier.
+ * Reads and writes are separated: a proposer may register a project, but only
+ * roles holding `project:write` may change or remove one. Previously every one
+ * of these was reachable with no authentication at all.
  */
-router.get("/:id", projectController.getProjectById);
+router.get("/", authorize(PERMISSION.PROJECT_READ), projectController.getAllProjects);
+router.get("/:id", authorize(PERMISSION.PROJECT_READ), projectController.getProjectById);
 
-/**
- * Create a new project.
- */
-router.post("/", projectController.createProject);
-
-/**
- * Update an existing project.
- */
-router.put("/:id", projectController.updateProject);
-
-/**
- * Delete a project.
- */
-router.delete("/:id", projectController.deleteProject);
+router.post("/", authorize(PERMISSION.PROJECT_WRITE), projectController.createProject);
+router.put("/:id", authorize(PERMISSION.PROJECT_WRITE), projectController.updateProject);
+router.delete("/:id", authorize(PERMISSION.PROJECT_WRITE), projectController.deleteProject);
 
 export default router;

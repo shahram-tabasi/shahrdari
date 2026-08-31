@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileSpreadsheetIcon,
@@ -11,10 +11,9 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { RadarPanel } from '../components/mcdm/RadarPanel';
 import { useData } from '../contexts/DataContext';
-import type { CriterionKey } from '../types';
-import { rankProjects } from '../utils/scoring';
+import type { CriterionKey, RankedProject } from '../types';
 import { faNum, faShortBudget } from '../utils/format';
-import { chatWithAi, exportReport } from '../services/api';
+import { createRanking, exportReport, runAiTask } from '../services/api';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
 const sections = [
@@ -34,13 +33,37 @@ const exportButtons = [
 
 export function ReportingCenter() {
   const { criteria, projects, neighborhoods, system } = useData();
-  const ranked = useMemo(() => {
-    const weights = criteria.reduce(
-      (acc, criterion) => ({ ...acc, [criterion.key]: criterion.weight }),
-      {} as Record<CriterionKey, number>
-    );
-    return rankProjects(projects, weights);
-  }, [criteria, projects]);
+  /**
+   * A formal report must quote the authoritative ranking, so it is fetched
+   * from the ranking engine rather than recomputed in the browser with a
+   * different method.
+   */
+  const weights = useMemo(
+    () =>
+      criteria.reduce(
+        (acc, criterion) => ({ ...acc, [criterion.key]: criterion.weight }),
+        {} as Record<CriterionKey, number>
+      ),
+    [criteria]
+  );
+
+  const [ranked, setRanked] = useState<RankedProject[]>([]);
+
+  const loadRanking = useCallback(async () => {
+    try {
+      const result = await createRanking({ weights });
+
+      setRanked(result.projects);
+    } catch {
+      // A report quoting a locally-invented ranking would be worse than one
+      // with an empty table, so nothing is substituted here.
+      setRanked([]);
+    }
+  }, [weights]);
+
+  useEffect(() => {
+    void loadRanking();
+  }, [loadRanking]);
 
   const totalBudget = useMemo(
     () => projects.reduce((sum, project) => sum + project.budget, 0),
@@ -61,7 +84,13 @@ export function ReportingCenter() {
   const [sent, setSent] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null); // <-- اضافه شد
+  const [aiError, setAiError] = useState<string | null>(null);
+  /**
+   * A report that embeds a model's text must carry the pending-review notice
+   * with it — an unlabelled AI paragraph in an official report reads as the
+   * municipality's own finding.
+   */
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
   const [exportLoading, setExportLoading] = useState<string | null>(null); // <-- فقط یک بار تعریف شد
 
   const on = (id: string) => enabled.includes(id);
@@ -92,10 +121,14 @@ export function ReportingCenter() {
     setAiLoading(true);
     setAiError(null);
     try {
-      const result = await chatWithAi(
-        'برای گزارش رسمی مدیریت، با استفاده از تمام داده‌های فعلی سامانه یک تحلیل دقیق از رتبه‌بندی، بودجه، ریسک و عدالت فضایی سبد پروژه‌ها تهیه کن. پاسخ فارسی، مستند به اعداد و مناسب درج مستقیم در گزارش باشد.'
-      );
-      setAiAnalysis(result.response.output);
+      const result = await runAiTask({
+        task: 'explainResult',
+        message:
+          'برای گزارش رسمی مدیریت، نتیجه رتبه‌بندی و ترکیب سبد پروژه‌ها را توضیح بده: چه عواملی رتبه‌ها را شکل داده‌اند، محدودیت‌ها کجا اثر گذاشته‌اند و وضعیت عدالت فضایی چگونه است. فقط از اعداد موجود در داده‌های داده‌شده استفاده کن.'
+      });
+
+      setAiAnalysis(result.output);
+      setAiNotice(result.notice ?? null);
     } catch (requestError) {
       setAiError(
         requestError instanceof Error ? requestError.message : 'تولید تحلیل گزارش ناموفق بود.'
@@ -264,14 +297,14 @@ export function ReportingCenter() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ranked.slice(0, 8).map((p) => (
+                  {ranked.slice(0, 8).map((p: RankedProject) => (
                     <tr key={p.id} className="border-b border-ink-300/25">
                       <td className="p-2 text-center font-bold text-ink-900">
-                        {faNum(p.rank)}
+                        {p.rank === null ? '—' : faNum(p.rank)}
                       </td>
                       <td className="p-2 text-right text-ink-700">{p.name}</td>
                       <td className="p-2 text-center font-bold text-ink-900">
-                        {faNum(p.finalScore, 1)}
+                        {p.finalScore === null ? '—' : faNum(p.finalScore, 1)}
                       </td>
                       <td className="p-2 text-center text-ink-700">
                         {faNum(p.justice, 2)}
@@ -314,6 +347,11 @@ export function ReportingCenter() {
     {aiAnalysis ? (
       <div className="mt-2 rounded-lg border-r-4 border-[#FF8F00] bg-[#FFF8E1] p-3 text-ink-700">
         <MarkdownRenderer content={aiAnalysis} />
+        {aiNotice ? (
+          <p className="mt-3 rounded-lg bg-amber-500/10 px-4 py-2.5 text-[11px] leading-6 text-amber-700">
+            {aiNotice}
+          </p>
+        ) : null}
       </div>
     ) : (
       <button
