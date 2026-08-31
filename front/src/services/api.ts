@@ -31,8 +31,46 @@ interface ApiEnvelope<T> {
   meta: unknown;
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)
-  ?.replace(/\/$/, '') ?? '/api/v1';
+const CONFIGURED_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)
+  ?.replace(/\/$/, '');
+
+/**
+ * API base URL.
+ *
+ * The normal path is the relative `/api/v1`, which `front/vite.config.ts`
+ * proxies to the backend in development and the reverse proxy serves in
+ * production. Relative is preferred because the browser then makes a
+ * same-origin request and CORS never enters the picture.
+ */
+const API_BASE_URL = CONFIGURED_BASE_URL ?? '/api/v1';
+
+/**
+ * Development fallback for when the proxy is not in effect.
+ *
+ * A dev server started outside the `front` directory never reads
+ * `front/vite.config.ts`, so the `/api` proxy is not installed. Vite then
+ * handles `/api/v1/...` itself: its SPA fallback only rewrites requests that
+ * accept HTML, and these requests ask for JSON, so every one of them comes
+ * back as a bare 404 that has nothing to do with the backend.
+ *
+ * Rather than leave the application dead in that state, the first such 404
+ * switches to the backend's own origin for the rest of the session. The
+ * backend's CORS allowlist covers the ports Vite uses in development, so the
+ * cross-origin request is accepted. Setting VITE_API_BASE_URL disables this
+ * entirely — an explicit configuration is never second-guessed.
+ */
+const DEV_FALLBACK_BASE_URL = 'http://127.0.0.1:4000/api/v1';
+
+let activeBaseUrl = API_BASE_URL;
+
+/** True while the relative path is still worth trying. */
+function canFallBack(): boolean {
+  return (
+    import.meta.env.DEV &&
+    CONFIGURED_BASE_URL === undefined &&
+    activeBaseUrl !== DEV_FALLBACK_BASE_URL
+  );
+}
 
 function wait(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -75,11 +113,20 @@ function authHeaders(): Record<string, string> {
  */
 class RetryableApiError extends Error {}
 
+/**
+ * The request provably never reached the backend, so nothing was submitted.
+ *
+ * This is safe to retry for ANY method, including POST: the usual reason not
+ * to retry a POST is that it may have been applied server-side before the
+ * response was mangled, and that cannot have happened here.
+ */
+class UnreachedBackendError extends RetryableApiError {}
+
 async function attemptRequest<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(`${activeBaseUrl}${path}`, {
       ...init,
       headers: {
         Accept: 'application/json',
@@ -89,7 +136,7 @@ async function attemptRequest<T>(path: string, init?: RequestInit): Promise<T> {
       }
     });
   } catch {
-    throw new RetryableApiError(
+    throw new UnreachedBackendError(
       'اتصال به بکند برقرار نشد. مطمئن شوید سرور بکند روی پورت ۴۰۰۰ در حال اجرا است.'
     );
   }
@@ -105,6 +152,26 @@ async function attemptRequest<T>(path: string, init?: RequestInit): Promise<T> {
         `بکند پاسخ معتبر JSON ارسال نکرد (HTTP ${response.status}).`
       );
     }
+  }
+
+  /*
+   * A 404 that is not one of our own JSON envelopes did not come from the
+   * backend — the request never reached it. In development that means the
+   * proxy is missing, so switch to the backend's origin and let the retry
+   * wrapper try again there.
+   */
+  if (response.status === 404 && !payload?.success && !payload?.message) {
+    if (canFallBack()) {
+      activeBaseUrl = DEV_FALLBACK_BASE_URL;
+
+      throw new UnreachedBackendError(
+        'درخواست به بکند نرسید؛ اتصال مستقیم به سرور بکند آزمایش می‌شود.'
+      );
+    }
+
+    throw new UnreachedBackendError(
+      `درخواست «${path}» به بکند نرسید (HTTP 404). اگر سرور توسعه را از پوشه‌ای غیر از front اجرا کرده‌اید، پروکسی /api فعال نمی‌شود.`
+    );
   }
 
   if (!payload) {
@@ -150,8 +217,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // Only GET requests are safe to silently retry — retrying a POST that
   // may have already reached the server (but whose response got mangled)
   // risks double-submitting it (e.g. duplicate AI chat calls).
-  const isRetryable = !init?.method || init.method.toUpperCase() === 'GET';
-  const maxAttempts = isRetryable ? 3 : 1;
+  const isIdempotent = !init?.method || init.method.toUpperCase() === 'GET';
+  const maxAttempts = 3;
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -160,7 +227,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch (error) {
       lastError = error;
 
-      if (!(error instanceof RetryableApiError) || attempt === maxAttempts) {
+      if (attempt === maxAttempts) {
+        break;
+      }
+
+      // A request that never reached the backend is safe to repeat whatever
+      // its method was. Anything else is only repeated when it is idempotent.
+      const safeToRepeat =
+        error instanceof UnreachedBackendError ||
+        (isIdempotent && error instanceof RetryableApiError);
+
+      if (!safeToRepeat) {
         break;
       }
 
