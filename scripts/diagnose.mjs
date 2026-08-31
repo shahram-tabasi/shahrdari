@@ -65,11 +65,50 @@ async function probe(url, init) {
       /* Not JSON — that is itself a finding, handled by the caller. */
     }
 
-    return { ok: true, status: response.status, text, json };
+    return {
+      ok: true,
+      status: response.status,
+      text,
+      json,
+      headers: response.headers,
+      /*
+       * Every response this API produces carries an X-Request-Id, set before
+       * routing and therefore present on success pages, on error pages and on
+       * its own 404s alike. Its ABSENCE on a reply that did arrive means the
+       * reply was not written by this server — something else on the machine
+       * answered in its place.
+       */
+      fromOurServer: response.headers.has('x-request-id')
+    };
   } catch (error) {
     return { ok: false, error: error.message };
   }
 }
+
+/** Who answered, when the answer did not come from this API. */
+function describeResponder(result) {
+  const server = result.headers?.get('server');
+  const powered = result.headers?.get('x-powered-by');
+  const type = result.headers?.get('content-type');
+  const body = result.text.trim().slice(0, 160).replace(/\s+/g, ' ');
+
+  return [
+    server ? `Server: ${server}` : null,
+    powered ? `X-Powered-By: ${powered}` : null,
+    type ? `Content-Type: ${type}` : null,
+    body ? `Body: ${body}` : '(empty body)'
+  ]
+    .filter(Boolean)
+    .map(line => `        ${line}`)
+    .join('\n');
+}
+
+const INTERCEPTED =
+  'The reply carries no X-Request-Id, so this API did not write it.\n' +
+  '        Either another program holds this port, or software on this machine\n' +
+  '        is inspecting local web traffic and answering in the server\'s place.\n' +
+  '        Endpoint-security suites do this; exclude localhost from their web\n' +
+  '        scanning and try again.';
 
 console.log(`\nBackend : ${backendUrl}`);
 console.log(`Vite    : ${viteUrl}\n`);
@@ -79,9 +118,24 @@ console.log(`Vite    : ${viteUrl}\n`);
 const health = await probe(`${backendUrl}/health`);
 
 if (!health.ok) {
-  report('backend is reachable', false, `${health.error} — start it with: cd backend && npm run dev`);
+  report(
+    'backend is reachable',
+    false,
+    `nothing answered on port ${backendPort} (${health.error})\n` +
+      '        Start it with: cd backend && npm run dev'
+  );
+} else if (health.status === 200 && health.fromOurServer) {
+  report('backend is reachable', true, 'HTTP 200');
+} else if (!health.fromOurServer) {
+  report(
+    'backend is reachable',
+    false,
+    `HTTP ${health.status} — something answered on port ${backendPort}, but it is not this API.\n` +
+      `        ${INTERCEPTED}\n` +
+      describeResponder(health)
+  );
 } else {
-  report('backend is reachable', health.status === 200, `HTTP ${health.status}`);
+  report('backend is reachable', false, `HTTP ${health.status} from the API — check its console output`);
 }
 
 /* ── 2. the dev server ───────────────────────────────────────────────────── */
@@ -120,10 +174,12 @@ if (!proxied.ok) {
     '/api proxy reaches the backend',
     false,
     'HTTP 404 with no backend envelope — the request never reached the backend.\n' +
-      '        Either the dev server did not load front/vite.config.ts (start it from the\n' +
-      '        front directory), or something between the browser and the dev server is\n' +
-      '        answering instead — endpoint-security software that inspects local web\n' +
-      '        traffic does this. Test by excluding localhost from its web scanning.'
+      (proxied.fromOurServer
+        ? '        Start the dev server from the front directory so it loads\n' +
+          '        front/vite.config.ts and installs the /api proxy.'
+        : `        ${INTERCEPTED}`) +
+      '\n' +
+      describeResponder(proxied)
   );
 } else {
   report(
@@ -149,11 +205,26 @@ if (!direct.ok) {
       '        Add it to CORS_ALLOWED_ORIGINS in backend/.env, or remove that line to\n' +
       '        use the defaults.'
   );
-} else {
+} else if (!direct.fromOurServer) {
+  report(
+    'backend accepts a browser request from the dev-server origin',
+    false,
+    `HTTP ${direct.status} — the reply did not come from this API.\n` +
+      `        ${INTERCEPTED}\n` +
+      describeResponder(direct)
+  );
+} else if (direct.status === 401 || direct.status === 200) {
+  // 401 is the correct answer without a session; the origin was accepted.
   report(
     'backend accepts a browser request from the dev-server origin',
     true,
     `HTTP ${direct.status} — origin accepted`
+  );
+} else {
+  report(
+    'backend accepts a browser request from the dev-server origin',
+    false,
+    `HTTP ${direct.status} — unexpected; the API answered but not with 200 or 401`
   );
 }
 
