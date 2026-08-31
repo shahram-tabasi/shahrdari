@@ -1,15 +1,35 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import OpenAI from "openai";
 
 import env from "../config/env.js";
 import HttpError from "../utils/http-error.js";
 
 /**
- * The only place the model SDK is instantiated.
+ * LANGUAGE-MODEL PROVIDER — the only place a model SDK is instantiated.
+ *
+ * VENDOR-NEUTRAL BY DESIGN. The client library speaks the OpenAI-compatible
+ * chat API, which is the de-facto standard: the same code talks to a hosted
+ * service, to a self-hosted vLLM/Ollama/LM Studio endpoint, or to any gateway
+ * that implements that wire format. Point `LLM_BASE_URL` at an internal
+ * deployment and no municipality data leaves the network — the option the
+ * directive asks the architecture to state explicitly.
+ *
+ * TO SWITCH PROVIDER: change `LLM_BASE_URL` and `LLM_API_KEY` in the
+ * environment. To switch to a provider with a different wire format, replace
+ * the body of `createChatCompletion` below; nothing outside this file knows
+ * which vendor is in use.
  *
  * The client is created lazily rather than at import time, because
  * `env.ai.enabled` may be false: the decision engine must start and serve every
- * non-AI endpoint when no model is configured («در زمان قطع سرویس هوش
- * مصنوعی، سامانه چگونه ادامه فعالیت می‌دهد»). Constructing a client with a null
+ * non-AI endpoint when no model is configured — the directive requires the
+ * system to keep working while the model service is down. Constructing a client with a null
  * key at module load would turn a missing optional integration into a boot
  * failure for the whole system.
  */

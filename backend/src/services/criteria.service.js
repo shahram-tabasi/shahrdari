@@ -1,9 +1,17 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import * as criteriaRepository from "../repositories/criteria.repository.js";
 import { DIRECTION } from "../data/criteria.js";
 import HttpError from "../utils/http-error.js";
 
 /**
- * مدیریت معیارها — «تعریف شاخص، مقیاس، جهت و منبع داده».
+ * CRITERIA MANAGEMENT — defining indicators, scales, directions and sources.
  *
  * The dimension list stays the frontend's weighting surface (`key`, `label`,
  * `hint`, `weight`), while the full model — leaf criteria, directions,
@@ -70,8 +78,8 @@ export async function getCriterionById(id) {
  * Changing an official criterion set is a governed act, so this validates
  * rather than trusting the caller: unknown keys, malformed weights and unknown
  * directions are all rejected. Leaf criteria are not editable over the API —
- * they are the شیوه‌نامه's own list, and changing them is a change to the
- * شیوه‌نامه, not a configuration tweak.
+ * they are the directive's own list, and changing them is an amendment to the
+ * directive, not a configuration tweak.
  *
  * @param {Array} collection
  * @returns {Promise<Array>}
@@ -119,7 +127,7 @@ export async function replaceCriteria(collection) {
       return null;
     }
 
-    // Label, rank and code come from the شیوه‌نامه and are not caller-editable.
+    // Label, rank and code come from the directive and are not caller-editable.
     return { ...base, weight: entry.weight };
   });
 

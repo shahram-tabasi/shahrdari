@@ -1,29 +1,50 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import crypto from "node:crypto";
 
 import HttpError from "../utils/http-error.js";
 
 /**
- * حاکمیت هوش مصنوعی — «مشخص شدن نقش هوش مصنوعی و نحوه استفاده مدل‌های زبانی».
+ * LANGUAGE-MODEL GOVERNANCE.
  *
- * پیوست شماره دو draws a hard boundary that the code, not a prompt, has to
- * enforce. A prompt asking the model to behave is a request; this module is
- * the control.
+ * Implements the directive's rules on what a language model may and may not do
+ * [پیوست شماره دو — نقش هوش مصنوعی و نحوه استفاده مدل‌های زبانی].
  *
- * Permitted (assistive only):
- *   استخراج بندهای مرتبط از اسناد بالادستی · پیشنهاد اولیه معیارها · تطبیق
- *   اولیه پروژه‌ها با اهداف راهبردی · خلاصه‌سازی پیشنهادهای پروژه · شناسایی
- *   تعارض یا نقص در شناسنامه پروژه · استخراج موجودیت‌ها · تولید توضیح
- *   قابل‌فهم برای نتایج مدل.
+ * THE KEY POINT: these boundaries are enforced by CODE, not by a prompt. A
+ * prompt telling a model to behave is a request it may ignore. This module is
+ * the actual control.
  *
- * Forbidden without human approval — and these are not merely discouraged,
- * they are structurally impossible here, because no AI code path writes to a
- * criterion, a score, a project's status or a portfolio:
- *   شاخص رسمی تصویب کند · اطلاعات مفقود را حدس بزند · امتیاز قطعی پروژه تعیین
- *   کند · پروژه‌ای را حذف کند · تصمیم نهایی سبد را اتخاذ کند.
+ * PERMITTED — assistive tasks only:
+ *   extracting clauses from governing documents; proposing candidate criteria;
+ *   preliminary matching of projects to strategic goals; summarising a
+ *   proposal; flagging conflicts or gaps in a project record; extracting
+ *   entities from text; explaining an engine result in plain language.
+ *
+ * FORBIDDEN without human approval:
+ *   approving an official indicator; guessing missing data; setting a final
+ *   project score; removing a project; making the final portfolio decision.
+ *
+ * These are not merely discouraged — they are structurally impossible here.
+ * No code path in the AI layer writes to a criterion, a score, a project's
+ * status or a portfolio. The model also has no tools, no database handle and
+ * no filesystem access. The worst outcome of a successful prompt injection is
+ * a misleading paragraph awaiting an expert's rejection.
+ *
+ * IF YOU ADD A NEW AI FEATURE: add its task to `AI_TASK` and
+ * `TASK_DEFINITIONS` below. Do NOT add a code path that writes engine data on
+ * the strength of a model response — route it through `recordSuggestion` and
+ * require `reviewSuggestion` first.
  */
 
 /**
- * The tasks a language model may be asked to perform.
+ * The allowlist of tasks a language model may be asked to perform.
+ * Anything not in this list is rejected before the model is ever called.
  */
 export const AI_TASK = Object.freeze({
   EXTRACT_CLAUSES: "extractClauses",
@@ -74,8 +95,11 @@ const TASK_DEFINITIONS = Object.freeze({
 });
 
 /**
- * Actions the model may never take. Listed explicitly so the boundary is
- * discoverable in the API and testable, rather than living only in prose.
+ * Actions the model may never take.
+ *
+ * Listed explicitly, and served over the API, so the boundary is discoverable
+ * and testable rather than living only in documentation. The UI shows this
+ * list to users so the limits of the assistant are visible in the product.
  */
 export const FORBIDDEN_AI_ACTIONS = Object.freeze([
   { code: "approveIndicator", label: "تصویب شاخص رسمی" },
@@ -86,7 +110,8 @@ export const FORBIDDEN_AI_ACTIONS = Object.freeze([
 ]);
 
 /**
- * Review state of an AI suggestion.
+ * Review state of a suggestion. A suggestion starts PENDING and only an
+ * authorised reviewer can move it to ACCEPTED or REJECTED.
  */
 export const REVIEW_STATUS = Object.freeze({
   PENDING: "pending",
@@ -119,8 +144,9 @@ export function assertAllowedTask(task) {
 }
 
 /**
- * The list of allowed and forbidden operations, for the UI and for the
- * «سند طراحی امنیت و سطوح دسترسی» deliverable.
+ * The full policy — allowed tasks, forbidden actions and the human-in-the-loop
+ * statement. Consumed by the UI and by the security design deliverable
+ * [سند طراحی امنیت و سطوح دسترسی].
  *
  * @returns {Object}
  */
@@ -137,20 +163,27 @@ export function describePolicy() {
 }
 
 /**
- * In-memory suggestion store. The seam for the municipality's database; the
- * record shape is what matters and is fixed by the شیوه‌نامه.
+ * In-memory suggestion store.
+ *
+ * REPLACE THIS WITH A DATABASE TABLE before production — suggestions are part
+ * of the audit record and must survive a restart. The record SHAPE below is
+ * fixed by the directive and should be preserved exactly when you migrate it.
  */
 const suggestions = new Map();
 
 /**
- * Create the provenance record پیوست شماره دو requires for every AI output:
+ * Record a model output together with the provenance the directive requires
+ * [الزامات کنترل خروجی هوش مصنوعی]:
  *
- *   منبع و شماره صفحه · متن مستند پشتیبان · نسخه مدل · تاریخ و زمان پردازش ·
- *   میزان اطمینان · وضعیت تأیید کارشناس · سابقه اصلاح · نام تأییدکننده ·
- *   دلیل پذیرش یا رد پیشنهاد.
+ *   source and page reference · supporting document text · model version ·
+ *   processing timestamp · confidence · expert review status · revision
+ *   history · reviewer name · reason for acceptance or rejection.
+ *
+ * Nothing recorded here affects any calculation. `appliedToDecision` stays
+ * false until an authorised expert accepts it.
  *
  * @param {Object} input
- * @returns {Object}
+ * @returns {Object} The stored suggestion.
  */
 export function recordSuggestion({
   task,
@@ -181,43 +214,44 @@ export function recordSuggestion({
     taskLabel: definition.label,
     requestId: requestId ?? null,
 
-    /** چه کسی پرسید؟ */
+    /** Who asked. */
     requestedBy: actor
       ? { id: actor.id, name: actor.name, role: actor.role }
       : null,
-    /** چه چیزی پرسید؟ */
+    /** What they asked. */
     prompt,
-    /** مدل چه پاسخی داد؟ */
+    /** What the model answered. */
     output,
 
-    /** نسخه مدل */
+    /** Model version that produced it. */
     model,
-    /** تاریخ و زمان پردازش */
+    /** Processing timestamp. */
     processedAt: new Date().toISOString(),
     /**
-     * میزان اطمینان. Null means the model gave no calibrated confidence — which
-     * is recorded honestly rather than filled with an invented number, since
-     * inventing one is exactly what the شیوه‌نامه forbids.
+     * Confidence. Null means the model gave no calibrated confidence value.
+     * That is recorded honestly rather than filled with an invented number —
+     * inventing one is exactly what the directive forbids.
      */
     confidence,
-    /** منبع و شماره صفحه، متن مستند پشتیبان */
+    /** Source reference and supporting document text. */
     sources,
     usage,
     guardrailFindings,
 
-    /** وضعیت تأیید کارشناس */
+    /** Expert review status. */
     reviewStatus: REVIEW_STATUS.PENDING,
-    /** نام تأییدکننده */
+    /** Reviewer identity, once reviewed. */
     reviewedBy: null,
     reviewedAt: null,
-    /** دلیل پذیرش یا رد پیشنهاد */
+    /** Reason given for acceptance or rejection. */
     reviewReason: null,
-    /** سابقه اصلاح */
+    /** Revision history; the original output is never overwritten. */
     revisions: [],
 
     /**
-     * The load-bearing field: until an authorised expert accepts it, this
-     * suggestion has no effect on any score, criterion or portfolio.
+     * THE LOAD-BEARING FIELD. Until an authorised expert accepts this
+     * suggestion, it has no effect on any score, criterion or portfolio.
+     * Never set this to true anywhere except in `reviewSuggestion`.
      */
     appliedToDecision: false
   };
@@ -228,14 +262,20 @@ export function recordSuggestion({
 }
 
 /**
- * Record an expert's decision on a suggestion — تأیید کارشناس.
+ * Record an expert's decision on a suggestion — the human-in-the-loop step
+ * [تأیید کارشناس].
+ *
+ * A reason is required for ACCEPTANCE as well as rejection: an unexplained
+ * approval is not an audit trail. A correction never overwrites the model's
+ * original output; it is appended to `revisions` so the original stays
+ * inspectable.
  *
  * @param {string} id
  * @param {Object} review
- * @param {string} review.status
- * @param {Object} review.reviewer
- * @param {string} review.reason
- * @param {string} [review.correctedOutput]
+ * @param {string} review.status ACCEPTED or REJECTED.
+ * @param {Object} review.reviewer The authenticated principal.
+ * @param {string} review.reason Mandatory justification.
+ * @param {string} [review.correctedOutput] Edited text, if the expert amended it.
  * @returns {Object}
  */
 export function reviewSuggestion(id, { status, reviewer, reason, correctedOutput }) {
@@ -262,7 +302,8 @@ export function reviewSuggestion(id, { status, reviewer, reason, correctedOutput
     );
   }
 
-  // سابقه اصلاح — a correction never overwrites the model's original output.
+  // A correction is appended, never applied in place: the model's original
+  // output must stay inspectable after an expert edits it.
   if (correctedOutput && correctedOutput !== suggestion.output) {
     suggestion.revisions.push({
       at: new Date().toISOString(),

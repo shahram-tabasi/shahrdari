@@ -1,4 +1,14 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import { Router } from "express";
+
+import { product } from "../config/branding.js";
 
 import aiRoutes from "./ai.routes.js";
 import auditRoutes from "./audit.routes.js";
@@ -23,7 +33,7 @@ const router = Router();
 router.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "سامانه پشتیبان تصمیم مدیریت سبد پروژه",
+    message: product.fullFa,
     data: { version: "v1", status: "online" },
     errors: null,
     meta: null

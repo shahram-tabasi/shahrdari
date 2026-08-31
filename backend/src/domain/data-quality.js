@@ -1,11 +1,30 @@
-/**
- * کنترل کیفیت داده — «شناسایی نقص، مغایرت و داده‌های نامعتبر».
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
  *
- * The module exists so that a decision is never defended with a number nobody
- * entered. It reports three kinds of finding, and deliberately reports rather
- * than repairs: silently defaulting a missing cost or inventing a missing score
- * is precisely the behaviour the شیوه‌نامه forbids the language model from
- * doing («اطلاعات مفقود را حدس بزند») and the same rule applies to the code.
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
+/**
+ * DATA QUALITY CONTROL — detecting gaps, contradictions and invalid data.
+ *
+ * This module exists so that a decision is never defended with a number nobody
+ * entered.
+ *
+ * IT REPORTS; IT DOES NOT REPAIR. Silently defaulting a missing cost or
+ * inventing a missing score is precisely the behaviour the directive forbids
+ * the language model from doing ("do not guess missing information"), and the
+ * same rule applies to our own code. If you are tempted to add a fallback
+ * value here, add a finding instead.
+ *
+ * Three kinds of finding are produced:
+ *   GAP           — something required was never recorded.
+ *   CONTRADICTION — two recorded figures disagree with each other.
+ *   INVALID       — a recorded value is out of range or references nothing.
+ *
+ * Severity drives behaviour: a BLOCKING finding means the project record
+ * cannot be registered as-is; WARNING and INFO are advisory.
  */
 
 import { criteria as allCriteria, mandatoryCriteria } from "../data/criteria.js";
@@ -33,7 +52,7 @@ export function inspectProject(project, options = {}) {
   const add = (severity, code, message) =>
     findings.push({ severity, code, message });
 
-  // ── نقص: unanswered mandatory criteria ────────────────────────────────
+  // ── GAP: unanswered mandatory criteria ───────────────────────────────
   const applicableGates = mandatoryCriteria.filter(
     gate =>
       gate.appliesTo === "all" ||
@@ -53,7 +72,7 @@ export function inspectProject(project, options = {}) {
     }
   });
 
-  // ── نقص: criterion scores falling back to the dimension ───────────────
+  // ── GAP: criterion scores falling back to the dimension score ────────
   const missingCriterionScores = criteria.filter(
     criterion => !Number.isFinite(project.criterionScores?.[criterion.code])
   );
@@ -82,7 +101,7 @@ export function inspectProject(project, options = {}) {
     );
   }
 
-  // ── نقص: half-finished projects without the required inputs ───────────
+  // ── GAP: in-progress projects missing required life-cycle inputs ─────
   if (project.classification?.projectClass === "inProgress") {
     missingLifecycleData(project).forEach(field =>
       add(
@@ -93,7 +112,7 @@ export function inspectProject(project, options = {}) {
     );
   }
 
-  // ── مغایرت: internally inconsistent figures ───────────────────────────
+  // ── CONTRADICTION: internally inconsistent figures ───────────────────
   const cashFlow = project.finance?.cashFlow ?? {};
   const cashFlowTotal = Object.values(cashFlow).reduce(
     (sum, amount) => sum + (amount ?? 0),
@@ -139,7 +158,7 @@ export function inspectProject(project, options = {}) {
     }
   }
 
-  // ── داده نامعتبر ──────────────────────────────────────────────────────
+  // ── INVALID DATA ─────────────────────────────────────────────────────
   if (!findProjectClass(project.classification?.projectClass)) {
     add(
       SEVERITY.BLOCKING,
@@ -179,7 +198,7 @@ export function inspectProject(project, options = {}) {
     findings,
     blockingCount: blocking,
     warningCount: findings.filter(f => f.severity === SEVERITY.WARNING).length,
-    /** درصد تکمیل شناسنامه در سطح معیار. */
+    /** How complete the project record is at criterion level, as a percentage. */
     criterionCompletenessPercent: round((scored / criteria.length) * 100, 1),
     registrable: blocking === 0
   };

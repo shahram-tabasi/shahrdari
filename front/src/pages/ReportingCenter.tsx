@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -10,11 +18,13 @@ import {
 import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { RadarPanel } from '../components/mcdm/RadarPanel';
+import { useApp } from '../contexts/AppContext';
 import { useData } from '../contexts/DataContext';
 import type { CriterionKey, RankedProject } from '../types';
 import { faNum, faShortBudget } from '../utils/format';
 import { createRanking, exportReport, runAiTask } from '../services/api';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
+import { client, product } from '../config/branding';
 
 const sections = [
   { id: 'summary', label: 'خلاصه مدیریتی', hint: 'یک پاراگراف جمع‌بندی' },
@@ -32,6 +42,10 @@ const exportButtons = [
 ];
 
 export function ReportingCenter() {
+  // `t(fa, en)` is the product-wide bilingual helper: it returns the Persian
+  // string in Persian mode and the English one in English mode. Every
+  // user-visible string must go through it.
+  const { t } = useApp();
   const { criteria, projects, neighborhoods, system } = useData();
   /**
    * A formal report must quote the authoritative ranking, so it is fetched
@@ -99,7 +113,7 @@ export function ReportingCenter() {
     try {
       setExportLoading(type);
       const payload = {
-        title: 'Smart-VAP Municipality Report',
+        title: `${t(product.fullFa, product.fullEn)} — ${t(client.fa, client.en)}`,
         projects,
         ranking: ranked,
         criteria,
@@ -237,7 +251,8 @@ export function ReportingCenter() {
               پیش‌نمایش زنده سند
             </h2>
             <p className="mt-1 text-xs text-ink-500 dark:text-white/45">
-              قالب A۴ • شهرداری کرمان • سامانه Smart-VAP
+              {t('قالب A۴', 'A4 format')} • {t(client.fa, client.en)} •{' '}
+              {t(product.fa, product.en)}
             </p>
           </div>
           <Badge tone="amber">{faNum(enabled.length)} بخش فعال</Badge>
@@ -406,7 +421,7 @@ export function ReportingCenter() {
           )}
 
           <div className="mt-8 flex items-center justify-between border-t border-ink-300/40 pt-4 text-[9px] text-ink-500">
-            <span>سامانه هوشمند اولویت‌بندی Smart-VAP</span>
+            <span>{t(product.fullFa, product.fullEn)}</span>
             <span>صفحه ۱ از ۴</span>
           </div>
         </div>

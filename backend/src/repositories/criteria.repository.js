@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import {
   criteria,
   dimensions,
@@ -7,10 +15,10 @@ import {
 /**
  * Criteria data access.
  *
- * The leaf criteria and the mandatory gates are the شیوه‌نامه's own list and are
+ * The leaf criteria and the mandatory gates are the directive's own list and are
  * served read-only; only the dimension weights are mutable, because that is the
  * one thing the expert panel is entitled to change without amending the
- * شیوه‌نامه itself.
+ * directive itself.
  */
 
 let dimensionCollection = structuredClone(dimensions);

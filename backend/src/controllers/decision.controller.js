@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import * as decisionService from "../services/decision.service.js";
 import * as audit from "../services/audit.service.js";
 import { AUDIT_CATEGORY } from "../services/audit.service.js";
@@ -6,8 +14,9 @@ import { successResponse } from "../utils/api-response.js";
 /**
  * Decision-engine endpoints.
  *
- * Every engine run is audited: «ثبت سوابق — نگهداری نسخه مدل، داده، اوزان و
- * تصمیم‌ها». A portfolio that was recommended six months ago has to be
+ * Every engine run is audited. The directive requires the model version, the
+ * data, the weights and the decision to be retained: a portfolio recommended
+ * six months ago has to be
  * reproducible, which means the weights, the seed and the constraint overrides
  * that produced it must be on record, not just the result.
  */
@@ -28,7 +37,7 @@ export async function getScenarios(req, res, next) {
 }
 
 /**
- * ارزیابی — screening, data quality and life-cycle evaluation.
+ * EVALUATION — screening, data quality and life-cycle assessment.
  */
 export async function evaluate(req, res, next) {
   try {
@@ -58,7 +67,7 @@ export async function evaluate(req, res, next) {
 }
 
 /**
- * فیلتر ۲ — ranking.
+ * FILTER 2 — ranking.
  */
 export async function createRanking(req, res, next) {
   try {
@@ -93,7 +102,7 @@ export async function createRanking(req, res, next) {
 }
 
 /**
- * فیلتر ۳ — portfolio construction.
+ * FILTER 3 — portfolio construction.
  */
 export async function optimizePortfolio(req, res, next) {
   try {
@@ -131,7 +140,7 @@ export async function optimizePortfolio(req, res, next) {
 }
 
 /**
- * تحلیل حساسیت و پایداری.
+ * Sensitivity and stability analysis.
  */
 export async function analyzeSensitivity(req, res, next) {
   try {

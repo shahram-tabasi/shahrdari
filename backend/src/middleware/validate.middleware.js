@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import { ZodError } from "zod";
 
 import HttpError from "../utils/http-error.js";
@@ -6,7 +14,7 @@ import HttpError from "../utils/http-error.js";
  * Validate a request against a Zod schema and replace the raw input with the
  * parsed result, so handlers only ever see values that passed validation.
  *
- * اعتبارسنجی ورودی — the parsed value replaces the original deliberately.
+ * The parsed value replaces the original deliberately.
  * Validating and then continuing to read the raw input is a common way for an
  * unvalidated field to reach a handler; here it cannot, because the raw object
  * is gone by the time the handler runs.

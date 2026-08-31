@@ -1,9 +1,17 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import crypto from "node:crypto";
 
 /**
  * Attach a correlation id to every request.
  *
- * «مسیر حسابرسی» requires an AI answer, the request that produced it, the
+ * The audit trail requires an AI answer, the request that produced it, the
  * expert who later approved it and the error it may have raised to be tied
  * together. A per-request id is what makes that possible without correlating
  * on timestamps.

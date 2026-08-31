@@ -1,28 +1,38 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import crypto from "node:crypto";
 
 import dotenv from "dotenv";
 import { z } from "zod";
+
+import { company, product } from "./branding.js";
 
 dotenv.config();
 
 /**
  * Application configuration — the single source of truth for environment.
  *
- * Security posture, from «فاز دوم: استانداردهای کدنویسی امن»:
+ * SECURITY POSTURE (from the secure-coding standard):
  *
- * - مدیریت رازها: no secret is ever hardcoded here or committed. Every secret
+ * - SECRETS: no secret is ever hardcoded here or committed. Every secret
  *   is read from the environment at run time, which is where a secrets manager
  *   (Vault, Key Vault, Kubernetes Secrets) injects it. The parsed values are
  *   never logged, and `describe()` below exists so that startup diagnostics can
  *   report configuration without printing any of it.
  *
- * - رفتار امن در حالت خطا: production requires its secrets to be present and
+ * - FAIL SECURE: production requires its secrets to be present and
  *   refuses to start without them, rather than silently falling back to a
  *   development default. Development is allowed a generated ephemeral key so a
  *   contributor can run the app, and it says so loudly.
  *
- * - The AI key is deliberately *optional*: پیوست شماره دو requires the system to
- *   answer «در زمان قطع سرویس هوش مصنوعی، سامانه چگونه ادامه فعالیت می‌دهد».
+ * - The AI key is deliberately OPTIONAL. The directive requires the system to
+ *   state how it keeps operating while the language-model service is down.
  *   The decision engine is the product; the language model is an assistant.
  *   A missing or broken AI key degrades the AI endpoints, it does not take the
  *   municipality's portfolio system offline.
@@ -65,13 +75,26 @@ const schema = z.object({
   /** Body size limit. Deliberately far below the previous 10mb. */
   JSON_BODY_LIMIT: z.string().default("256kb"),
 
+  /*
+   * Language-model connection.
+   *
+   * Vendor-neutral names (LLM_*) are preferred. The legacy OPENAI_* names are
+   * still accepted so an existing .env keeps working — see the merge step
+   * below. Set LLM_BASE_URL to an internally hosted, OpenAI-compatible
+   * endpoint to keep all data inside the municipal network.
+   */
+  LLM_API_KEY: z.string().min(1).optional(),
+  LLM_MODEL: z.string().optional(),
+  LLM_BASE_URL: z.string().url().optional(),
+
+  /* Deprecated aliases, kept for backward compatibility. */
   OPENAI_API_KEY: z.string().min(1).optional(),
-  OPENAI_MODEL: z.string().default("gpt-4o-mini"),
+  OPENAI_MODEL: z.string().optional(),
   OPENAI_BASE_URL: z.string().url().optional(),
 
   /**
    * Whether municipality documents may leave the network for a third-party
-   * model. Defaults to false — «حاکمیت و محرمانگی داده» requires the proposal
+   * model. Defaults to false. The data-governance rules require an explicit
    * to state explicitly whether documents are sent to an external service, and
    * the safe default is that they are not.
    */
@@ -95,6 +118,14 @@ if (!parsed.success) {
 const raw = parsed.data;
 const isProduction = raw.NODE_ENV === "production";
 
+/*
+ * Resolve the language-model settings, preferring the vendor-neutral names and
+ * falling back to the legacy ones so existing deployments keep working.
+ */
+const llmApiKey = raw.LLM_API_KEY ?? raw.OPENAI_API_KEY ?? null;
+const llmModel = raw.LLM_MODEL ?? raw.OPENAI_MODEL ?? "gpt-4o-mini";
+const llmBaseUrl = raw.LLM_BASE_URL ?? raw.OPENAI_BASE_URL ?? null;
+
 if (isProduction && !raw.AUTH_SECRET) {
   throw new Error(
     "AUTH_SECRET is required in production. Inject it from the secrets manager; the application will not start with a generated key."
@@ -111,7 +142,10 @@ const authSecret =
 
 const env = Object.freeze({
   app: {
-    name: "سامانه پشتیبان تصمیم مدیریت سبد پروژه شهرداری کرمان",
+    // Names come from `config/branding.js` — edit them there, not here.
+    name: product.fullFa,
+    nameEn: product.fullEn,
+    vendor: company.fa,
     environment: raw.NODE_ENV,
     isProduction,
     port: raw.PORT,
@@ -131,11 +165,11 @@ const env = Object.freeze({
   },
 
   ai: {
-    /** Fail-closed: no key means the AI features are simply unavailable. */
-    enabled: Boolean(raw.OPENAI_API_KEY),
-    apiKey: raw.OPENAI_API_KEY ?? null,
-    model: raw.OPENAI_MODEL,
-    baseUrl: raw.OPENAI_BASE_URL ?? null,
+    /** Fail-closed: no key means the assistant features are simply unavailable. */
+    enabled: Boolean(llmApiKey),
+    apiKey: llmApiKey,
+    model: llmModel,
+    baseUrl: llmBaseUrl,
     allowExternalDocuments: raw.AI_ALLOW_EXTERNAL_DOCUMENTS,
     maxInputCharacters: raw.AI_MAX_INPUT_CHARACTERS,
     maxOutputTokens: raw.AI_MAX_OUTPUT_TOKENS,

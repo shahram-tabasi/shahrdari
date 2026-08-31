@@ -1,27 +1,61 @@
-/**
- * Global constants shared across
- * Excel, PDF and PowerPoint builders.
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
  */
 
+/**
+ * Global constants shared across the Excel, PDF and PowerPoint builders.
+ *
+ * TO RE-BRAND: do not edit the strings here. `APP_INFO` and `EXPORT` are
+ * derived from `config/branding.js`, which is the single place the company
+ * and product names are defined. Everything below follows automatically.
+ */
+
+import branding, { company, product } from "../../config/branding.js";
+
+/**
+ * Identity shown on report covers and in document metadata.
+ *
+ * `company` is the vendor (us), `client` is the municipality the report is
+ * produced for. Both appear on formal output, because a report has to say who
+ * produced it as well as who it is for.
+ */
 export const APP_INFO = Object.freeze({
 
-    name: "Municipality AI Decision Support System",
+    name: product.fullFa,
 
-    shortName: "MAIDS",
+    nameEn: product.fullEn,
 
-    company: "Municipality",
+    shortName: product.fa,
 
-    version: "1.0.0"
+    company: company.fa,
+
+    companyEn: company.en,
+
+    client: branding.client.fa,
+
+    clientEn: branding.client.en,
+
+    version: product.version
 
 });
 
+/**
+ * Document metadata embedded in the generated files (PDF properties, Excel
+ * workbook properties, PowerPoint core properties). Some of these fields are
+ * visible in a file's "Properties" dialog, so they carry the company name
+ * rather than a generic platform label.
+ */
 export const EXPORT = Object.freeze({
 
-    author: "Municipality AI",
+    author: company.en,
 
-    subject: "Decision Support Report",
+    subject: "Project Portfolio Decision Support Report",
 
-    creator: "Municipality AI Platform",
+    creator: `${product.fullEn} — ${company.en}`,
 
     language: "fa",
 
@@ -77,17 +111,21 @@ export const PDF = Object.freeze({
 
 });
 
+/**
+ * PowerPoint deck metadata. Shown in the file's Properties dialog, so it
+ * names the vendor and the client rather than a generic platform label.
+ */
 export const PPT = Object.freeze({
 
     layout: "LAYOUT_WIDE",
 
-    author: "Municipality AI",
+    author: company.en,
 
-    company: "Municipality",
+    company: company.en,
 
-    subject: "Executive Report",
+    subject: "Project Portfolio Executive Report",
 
-    title: "Municipality Report"
+    title: product.fullEn
 
 });
 

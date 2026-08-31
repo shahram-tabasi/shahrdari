@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -62,7 +70,7 @@ export function SmartIntake() {
 
     try {
       const result = await runAiTask({
-        // «شناسایی تعارض یا نقص در شناسنامه پروژه» — the model flags what is
+        // "Detect conflicts or gaps in a project record" — the model flags what is
         // missing or contradictory. It does not score the project and does not
         // fill in the gaps it finds; both are forbidden without human approval.
         task: 'detectConflicts',

@@ -1,4 +1,12 @@
-import { createChatCompletion, isAvailable } from "../providers/openai.provider.js";
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
+import { createChatCompletion, isAvailable } from "../providers/llm.provider.js";
 import env from "../config/env.js";
 import { screenInput, screenOutput } from "../security/guardrails.js";
 import * as audit from "./audit.service.js";
@@ -12,16 +20,16 @@ import HttpError from "../utils/http-error.js";
  * AI orchestration.
  *
  * Every request follows the same fixed path, and each step is a control the
- * security document or the شیوه‌نامه asks for:
+ * security standard or the directive requires:
  *
- *   1. task allowlist          — حدود کاربرد قابل‌قبول مدل‌های زبانی
- *   2. input guardrail         — بررسی ورودی برای prompt injection
+ *   1. task allowlist          — only approved assistive tasks are accepted
+ *   2. input guardrail         — screen the prompt for injection attempts
  *   3. availability check      — degraded mode when no model is configured
- *   4. least-privilege context — حداقل دسترسی برای عامل‌های هوش مصنوعی
- *   5. model call              — bounded output, no tools attached
- *   6. output guardrail        — بررسی خروجی برای افشای PII و system prompt
- *   7. provenance record       — الزامات کنترل خروجی هوش مصنوعی
- *   8. audit entry             — مسیر حسابرسی
+ *   4. least-privilege context — the model sees only what the task needs
+ *   5. model call              — bounded output, NO tools attached
+ *   6. output guardrail        — screen for PII and system-prompt leakage
+ *   7. provenance record       — store the output with its full audit record
+ *   8. audit entry             — who asked, what, and what came back
  *
  * The model is given no tools, no database handle and no filesystem access.
  * That is deliberate: the least-privilege requirement is met by the model

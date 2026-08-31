@@ -1,11 +1,22 @@
-/**
- * تحلیل عدالت فضایی — the deprivation index and the regional-equity constraint.
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
  *
- * پیوست شماره دو lists ten indicators for the deprivation index and requires a
- * minimum share of the portfolio to reach the target districts. The index is
- * recomputed here from the raw indicators rather than read from a stored
- * scalar, so that a change in the underlying data actually moves the number and
- * the calculation can be re-derived during an audit.
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
+/**
+ * SPATIAL EQUITY ANALYSIS — the deprivation index and the regional-equity
+ * constraint [تحلیل عدالت فضایی].
+ *
+ * Appendix 2 lists ten indicators for the deprivation index and requires a
+ * minimum share of the portfolio to reach the target districts.
+ *
+ * The index is RECOMPUTED here from the raw indicators on every run rather than
+ * read from a stored number. Two reasons: a change in the underlying data
+ * actually moves the result, and an auditor can re-derive the figure from the
+ * inputs. The indicator list and weights live in `data/policy.js`.
  */
 
 import { deprivationIndicators, equityConstraints } from "../data/policy.js";
@@ -86,8 +97,8 @@ export function computeDeprivationIndex(
 }
 
 /**
- * Districts whose population-weighted deprivation index clears the threshold —
- * the «مناطق هدف» the minimum share must reach.
+ * Districts whose population-weighted deprivation index clears the threshold.
+ * These are the target districts the minimum-share constraint must reach.
  *
  * @param {Array} scoredNeighborhoods
  * @param {number} [threshold]
@@ -176,7 +187,7 @@ export function evaluateEquity(
     totalBudget: round(totalBudget, 2),
     beneficiaries,
     deprivedBeneficiaries,
-    /** «کاهش شکاف برخورداری مناطق» expressed as a single 0..1 objective. */
+    /** The inter-district provision gap, as a single 0..1 objective value. */
     equityScore: beneficiaries > 0
       ? round(deprivedBeneficiaries / beneficiaries, 4)
       : 0

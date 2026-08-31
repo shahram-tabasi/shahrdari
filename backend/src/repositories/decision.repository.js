@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import { criteria, dimensions, mandatoryCriteria } from "../data/criteria.js";
 import neighborhoods from "../data/neighborhoods.js";
 import policy from "../data/policy.js";

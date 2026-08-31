@@ -1,20 +1,33 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
- * موتور رتبه‌بندی — PROMETHEE II.
+ * RANKING ENGINE — PROMETHEE II.
  *
- * The شیوه‌نامه describes the ranking module as «محاسبه جریان‌ها و رتبه
- * پروژه‌ها»: preference *flows*, not a weighted average. PROMETHEE II is used
- * because it gives the appendix exactly the things it asks for and a simple
- * weighted sum cannot:
+ * The directive describes the ranking module as "computing FLOWS and project
+ * ranks" — preference flows, not a weighted average. PROMETHEE II is used
+ * because it delivers three things the directive asks for that a weighted sum
+ * structurally cannot:
  *
- *   - آستانه ترجیح (`p`) and an indifference threshold (`q`), so a trivial
- *     difference between two projects does not translate into a preference;
- *   - pairwise flows, which make «بررسی رتبه‌برگشتی» (rank reversal) and
- *     «آزمون ورود و حذف پروژه» meaningful tests rather than tautologies;
- *   - a per-criterion decomposition of *why* one project outranks another,
- *     which is what the report generator needs to justify a decision.
+ *   1. Preference and indifference thresholds (p and q), so a trivial
+ *      difference between two projects does not become a preference.
+ *   2. Pairwise flows, which make the rank-reversal check and the add/drop
+ *      test meaningful tests rather than tautologies.
+ *   3. A per-criterion decomposition of WHY one project outranks another,
+ *      which the report generator needs in order to justify a decision.
  *
- * The weighted sum is kept alongside as `utility`, purely as a familiar
- * reference figure for the dashboard — the ordering is the net flow.
+ * A weighted sum is still computed and returned as `utility`, purely as a
+ * familiar reference figure for the dashboard. IT DOES NOT DETERMINE THE
+ * ORDER — the net flow does. Do not sort on `utility`.
+ *
+ * NOTE ON SINGLE-MEMBER GROUPS: a project that is the only member of its class
+ * has no one to be compared against, so its net flow is 0 and its displayed
+ * score is 50. That is correct, not a bug.
  */
 
 import { buildDecisionMatrix, round } from "./normalize.js";

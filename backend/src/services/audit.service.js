@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -5,8 +13,10 @@ import path from "node:path";
 import env from "../config/env.js";
 
 /**
- * الگ‌گذاری متمرکز و غیرقابل تغییر — «این الگ‌ها باید در برابر حذف یا دستکاری
- * محافظت شوند».
+ * CENTRALISED, TAMPER-EVIDENT AUDIT LOG.
+ *
+ * The security standard requires audit records to be protected against
+ * deletion and modification.
  *
  * A single process cannot make a local file truly immutable — that is the job
  * of the central log sink (WORM storage, an append-only collector) this service
@@ -16,8 +26,8 @@ import env from "../config/env.js";
  * reports exactly where.
  *
  * The record shape covers the audit trail the security document requires of an
- * AI system: چه کسی پرسید؟ چه چیزی پرسید؟ مدل چه پاسخی داد؟ چه ابزاری فراخوانی
- * شد؟ چه داده‌ای بازیابی شد؟ چه اقدامی انجام شد؟
+ * AI system: who asked, what they asked, what the model answered, which tools
+ * were invoked, what data was retrieved, and what action was taken.
  */
 
 const GENESIS = "0".repeat(64);
@@ -160,7 +170,7 @@ function ensureStream() {
  * @param {Object} entry
  * @param {string} entry.category One of `AUDIT_CATEGORY`.
  * @param {string} entry.action What happened.
- * @param {Object} [entry.actor] `{ id, role, name }` — چه کسی؟
+ * @param {Object} [entry.actor] `{ id, role, name }` — who performed it.
  * @param {string} [entry.requestId] Correlation id.
  * @param {string} [entry.outcome] `success` | `denied` | `failure`.
  * @param {Object} [entry.detail] Anything else worth keeping.

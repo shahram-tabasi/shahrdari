@@ -1,8 +1,17 @@
-/**
- * محافظ‌های LLM و ایزوله‌سازی — «فاز سوم، بند ۱-۵».
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
  *
- * «مدل LLM نباید مستقیماً بدون کنترل با کاربر، داده‌ها یا ابزارهای اجرایی در
- *  ارتباط باشد. باید یک لایه کنترلی یا Guardrail وجود داشته باشد.»
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
+/**
+ * LLM GUARDRAILS AND ISOLATION.
+ *
+ * The security standard requires that a language model never interact with
+ * users, data or executable tools without a control layer in between. This
+ * module is that layer.
  *
  * This module is that layer. It runs on the way in (prompt-injection screening,
  * size limits) and on the way out (PII detection, system-prompt leakage,
@@ -38,7 +47,7 @@ const INJECTION_PATTERNS = [
 ];
 
 /**
- * Direct attempts to make the model do what the شیوه‌نامه forbids it doing
+ * Direct attempts to make the model do what the directive forbids it doing
  * without human approval. These are screened at the prompt, not only at the
  * response, so the attempt itself is recorded.
  */
@@ -54,7 +63,8 @@ const FORBIDDEN_REQUEST_PATTERNS = [
 ];
 
 /**
- * PII patterns for outbound screening — «خروجی‌ها را برای افشای PII بررسی کند».
+ * PII patterns for outbound screening. The security standard requires model
+ * output to be checked for personal-data disclosure before it reaches a user.
  * Iranian identifiers are included because a generic English-language PII
  * detector would miss every one of them.
  */
@@ -200,7 +210,7 @@ export function screenOutput(output) {
     };
   }
 
-  // افشای system prompt — the response is withheld entirely, not redacted:
+  // System-prompt leakage. The response is withheld ENTIRELY, not redacted:
   // a leaked prompt means the model is not following instructions, so nothing
   // else in that response can be trusted either.
   const leaked = SYSTEM_PROMPT_MARKERS.some(marker => output.includes(marker));
@@ -236,7 +246,7 @@ export function screenOutput(output) {
  * Strip the fields that must never leave the municipality's network when the
  * context is handed to an external model.
  *
- * «چه داده‌هایی باید ناشناس‌سازی شوند» — the answer implemented here is: any
+ * Which data must be anonymised: the answer implemented here is any
  * free-text narrative that may name a person, and any contact or identity
  * field. The decision-relevant numbers stay, because the model cannot help
  * reason about a portfolio it cannot see.

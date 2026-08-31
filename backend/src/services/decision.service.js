@@ -1,14 +1,26 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
- * Decision service — the three filters of the شیوه‌نامه, end to end.
+ * DECISION SERVICE — the directive's three filters, end to end.
  *
- *   فیلتر ۱  screening   معیارهای الزامی، ماهیت صفر و یک
- *   فیلتر ۲  weighting + ranking   معیارهای ترجیحی، جریان‌های ترجیح
- *   فیلتر ۳  portfolio   تشکیل سبد تحت محدودیت‌ها
+ *   FILTER 1  screening  — mandatory pass/fail gates       [فیلتر شماره یک]
+ *   FILTER 2  weighting + ranking — preferential criteria  [فیلتر شماره دو]
+ *   FILTER 3  portfolio  — selection under constraints     [فیلتر شماره سه]
  *
- * The appendix's distinction between ارزیابی, رتبه‌بندی and انتخاب سبد is
- * reflected in the API surface: `evaluate`, `rankProjects` and
- * `optimizePortfolio` are three separate operations, and a high rank never
- * implies portfolio membership.
+ * The directive distinguishes three separate activities — EVALUATION,
+ * RANKING and PORTFOLIO SELECTION — and the API surface mirrors that exactly:
+ * `evaluateProjects`, `rankProjects` and `optimizePortfolio` are three
+ * distinct operations. A high rank NEVER implies portfolio membership; that is
+ * the whole reason they are not one endpoint.
+ *
+ * This file is orchestration only. The mathematics lives in `../domain/*`,
+ * which is pure and has no I/O, so it can be tested without the HTTP layer.
  */
 
 import * as decisionRepository from "../repositories/decision.repository.js";
@@ -144,9 +156,12 @@ function buildCandidatePool(projects, criterionWeights) {
 }
 
 /**
- * ارزیابی — measure each project's performance on the criteria, with no
- * ordering implied. This is the operation the appendix distinguishes from
- * ranking, and it is what the project دشبورد and quality reports consume.
+ * EVALUATION — measure each project's performance on the criteria, with no
+ * ordering implied.
+ *
+ * This is the operation the directive distinguishes from ranking. It returns
+ * screening results, data-quality findings and life-cycle assessments, and is
+ * what the dashboard and the quality reports consume.
  *
  * @param {Object} [input]
  * @returns {Promise<Object>}
@@ -196,7 +211,7 @@ export async function evaluateProjects(input = {}) {
 }
 
 /**
- * فیلتر ۲ — weight the preferential criteria and rank the projects.
+ * FILTER 2 — weight the preferential criteria and rank the projects.
  *
  * @param {Object} [input]
  * @returns {Promise<Object>}
@@ -216,8 +231,10 @@ export async function rankProjects(input = {}) {
   const weighting = resolveDimensionWeights(input, dimensions);
   const criterionWeights = expandToCriterionWeights(weighting.weights, allCriteria);
 
-  // One comparison matrix per class: «پروژه‌های کاملاً ناهمگون نباید بدون
-  // قواعد تفکیکی در یک ماتریس واحد قرار گیرند».
+  // One comparison matrix PER CLASS. The directive forbids putting wholly
+  // heterogeneous projects in a single matrix without separating rules —
+  // comparing an emergency retrofit against a beautification scheme in one
+  // matrix produces a result nobody can defend.
   const groups = new Map();
 
   comparable.forEach(project => {
@@ -310,7 +327,7 @@ export async function rankProjects(input = {}) {
 }
 
 /**
- * فیلتر ۳ — build the portfolio under the full constraint set.
+ * FILTER 3 — build the portfolio under the full constraint set.
  *
  * @param {Object} input
  * @returns {Promise<Object>}
@@ -372,7 +389,7 @@ export async function optimizePortfolio(input) {
    * the budget cannot buy a compliant portfolio — not a best-effort list that
    * quietly overspends. Bisecting on the cap finds the smallest budget at
    * which the constraint set *is* satisfiable, which is the number the
-   * decision maker actually needs («تحلیل تغییر بودجه»).
+   * decision maker actually needs (the budget-change analysis).
    */
   const diagnoseInfeasibility = () => {
     const feasibleAt = cap =>
@@ -531,7 +548,7 @@ export async function optimizePortfolio(input) {
 }
 
 /**
- * اعتبارسنجی، حساسیت و شاخص پایداری.
+ * VALIDATION, SENSITIVITY AND STABILITY ANALYSIS.
  *
  * @param {Object} input
  * @returns {Promise<Object>}
@@ -588,7 +605,7 @@ export async function analyzeSensitivity(input) {
     criterionWeights
   });
 
-  // «علت اصلی حذف یا انتخاب» — attribute each project's fate to the binding
+  // Attribute each project's fate to the binding
   // rule rather than leaving the stakeholder to guess.
   const baselineIds = new Set(
     baseline.selected.map(project => String(project.id))

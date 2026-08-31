@@ -1,14 +1,25 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
- * فیلتر شماره یک — the mandatory-criteria gate.
+ * FILTER 1 — the mandatory-criteria gate.
  *
- * The شیوه‌نامه is unambiguous about the semantics: «معیارهای الزامی، معیارهایی
- * هستند که ماهیت صفر و یک دارند و اگر … پروژه‌ای یکی از آن‌ها را نداشته باشد
- * کنار گذاشته شده و دیگر با سایر پروژه‌ها مورد مقایسه و بررسی قرار نمی‌گیرد».
+ * The directive is unambiguous: mandatory criteria are pass/fail, and a project
+ * that fails one "is set aside and is no longer compared or assessed against
+ * the other projects".
  *
- * A failed gate is therefore an exclusion, never a score penalty. The engine
- * also fails *closed*: a project whose answer to a mandatory criterion is
- * simply absent is rejected as unanswered, rather than being waved through on
- * the assumption that silence means compliance.
+ * Two consequences, both deliberate:
+ *
+ *   1. A failed gate is an EXCLUSION, never a score penalty. There is no
+ *      weight you can lower to let a failing project back in.
+ *   2. The gate FAILS CLOSED. A project whose answer to an applicable
+ *      mandatory criterion is simply absent is rejected as unanswered, not
+ *      waved through on the assumption that silence means compliance.
  */
 
 import { mandatoryCriteria } from "../data/criteria.js";

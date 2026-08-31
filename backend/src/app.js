@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -60,7 +68,7 @@ app.use(
  * CORS against an explicit allowlist.
  *
  * The previous `cors()` with no arguments reflected any origin and is the
- * opposite of «اعتماد صفر»: it lets any site a municipal employee visits call
+ * opposite of zero trust: it lets any site a municipal employee visits call
  * this API with their session. Unknown origins are rejected here.
  *
  * Requests with no `Origin` header (server-to-server, curl, health probes) are
@@ -116,7 +124,7 @@ app.use(
  *
  * The limit is 256kb by default, not the previous 10mb: nothing this API
  * accepts is large, and a generous limit is free memory pressure for an
- * attacker («جلوگیری از ایجاد درخواست‌های تکراری یا سنگین»).
+ * attacker, and the standard requires bounding oversized and repeated requests.
  */
 app.use(express.json({ limit: env.app.jsonBodyLimit, strict: true }));
 app.use(

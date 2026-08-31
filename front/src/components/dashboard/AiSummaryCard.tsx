@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import React, { useState } from 'react';
 import { RefreshCwIcon, SparklesIcon } from 'lucide-react';
 import { Card } from '../ui/Card';
@@ -10,7 +18,7 @@ export function AiSummaryCard() {
   const [error, setError] = useState<string | null>(null);
   /**
    * The model's answer is a suggestion pending expert review, and the UI has
-   * to say so — «هر خروجی مدل زبانی یک پیشنهاد است».
+   * to say so: every language-model output is a suggestion, never a finding.
    */
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -20,7 +28,7 @@ export function AiSummaryCard() {
 
     try {
       const result = await runAiTask({
-        // `explainResult` is one of the tasks the شیوه‌نامه permits: the model
+        // `explainResult` is one of the tasks the directive permits: the model
         // explains the engine's output, it does not produce the ranking.
         task: 'explainResult',
         message:

@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import type { CriterionKey, Project, RankedProject } from '../types';
 
 /**
@@ -15,7 +23,7 @@ import type { CriterionKey, Project, RankedProject } from '../types';
  *
  * The two will not always agree, and that is expected rather than a bug: a
  * weighted sum has no preference thresholds and no pairwise flows, which is
- * precisely why the شیوه‌نامه's ranking module is not a weighted sum.
+ * precisely why the directive's ranking module is not a weighted sum.
  */
 
 /**

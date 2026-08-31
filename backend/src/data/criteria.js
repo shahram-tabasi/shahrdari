@@ -1,29 +1,62 @@
-/**
- * Criteria model of the "شناسایی، انتخاب، اولویت‌بندی و تعریف سبد پروژه" شیوه‌نامه
- * (ویرایش پنجم، ذیل نظام جامع مدیریت پروژه شهرداری کرمان).
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
  *
- * The شیوه‌نامه splits the decision criteria into two families:
- *
- *   1. معیارهای الزامی (mandatory) — binary gates. A project failing any one of
- *      them is dropped at «فیلتر شماره یک» and never enters the comparison
- *      matrix. See `mandatoryCriteria` below.
- *
- *   2. معیارهای ترجیحی (preferential) — graded criteria, grouped into eight
- *      dimensions (ابعاد) that the شیوه‌نامه itself ranks 1..8. See
- *      `dimensions` and `criteria` below.
- *
- * Dimension weights are NOT hardcoded: they are derived from the rank the
- * شیوه‌نامه assigns to each dimension using the Rank-Order Centroid (ROC)
- * method, so the numbers stay auditable and traceable back to the document.
- * An expert panel may override them through the weighting engine (AHP), in
- * which case the consistency ratio is recorded alongside.
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
  */
 
 /**
- * Direction of a criterion.
+ * CRITERIA MODEL.
  *
- * - `benefit` — a higher raw value is better.
- * - `cost`    — a higher raw value is worse (e.g. risk, هزینه, بدهی).
+ * Implements the criteria defined by the governing directive
+ * [شیوه‌نامه شناسایی، انتخاب، اولویت‌بندی و تعریف سبد پروژه — ویرایش پنجم].
+ *
+ * The directive splits decision criteria into two families:
+ *
+ *   1. MANDATORY [معیارهای الزامی] — binary pass/fail gates. A project that
+ *      fails any one of them is dropped at filter #1 and never enters the
+ *      comparison matrix at all. See `mandatoryCriteria` below.
+ *
+ *   2. PREFERENTIAL [معیارهای ترجیحی] — graded criteria, grouped into eight
+ *      dimensions that the directive itself ranks 1..8. See `dimensions` and
+ *      `criteria` below.
+ *
+ * WHY DIMENSION WEIGHTS ARE COMPUTED, NOT TYPED IN
+ * ------------------------------------------------
+ * The directive states a RANKING of the eight dimensions but gives no numeric
+ * weights. Rather than invent numbers, the defaults are derived from that
+ * ranking with the Rank-Order Centroid method (see `rankOrderCentroidWeights`).
+ * Every weight therefore traces back to a line in the directive.
+ *
+ * An expert panel can override them at run time via the weighting engine
+ * (direct weights, or an AHP pairwise matrix); the consistency ratio is
+ * recorded alongside whenever AHP is used.
+ *
+ * WHAT TO EDIT HERE
+ * -----------------
+ *   - `dimensionDefinitions` — only if the directive's ranking changes.
+ *   - `criteria[].localWeight` — the relative weight of a criterion WITHIN its
+ *     dimension. Safe to tune; it does not affect the dimension-level balance.
+ *   - `criteria[].q` / `.p` — the PROMETHEE preference thresholds. See the
+ *     note on the `criteria` array below before changing these.
+ *   - `criteria[].direction` — get this wrong and the criterion's preference is
+ *     silently inverted. Read the DIRECTION note below first.
+ *
+ * Persian strings in this file are user-visible labels shown in the UI and in
+ * reports; they are not comments. Keep them.
+ */
+
+/**
+ * DIRECTION OF A CRITERION.
+ *
+ * - `benefit` — a higher raw value is BETTER (e.g. beneficiary population).
+ * - `cost`    — a higher raw value is WORSE (e.g. risk, cost, duration, debt).
+ *
+ * IMPORTANT: cost criteria are inverted by the normalisation engine, NOT in the
+ * dataset. Never enter a pre-inverted value in the project data. If you invert
+ * both here and in the data, the two cancel out and the criterion silently
+ * pushes the ranking the wrong way — with no error anywhere.
  */
 export const DIRECTION = Object.freeze({
   BENEFIT: "benefit",
@@ -31,8 +64,10 @@ export const DIRECTION = Object.freeze({
 });
 
 /**
- * The eight preferential dimensions, with the rank («رتبه بعد») the
- * شیوه‌نامه assigns to each of them.
+ * The eight preferential dimensions, each with the rank the directive assigns
+ * to it [رتبه بعد]. Rank 1 is the most important.
+ *
+ * Order in this array does not matter; `rank` is what drives the weights.
  */
 const dimensionDefinitions = [
   {
@@ -94,14 +129,18 @@ const dimensionDefinitions = [
 ];
 
 /**
- * Rank-Order Centroid weights.
+ * Rank-Order Centroid (ROC) weights.
  *
- * For a set of `n` ranked items, the ROC weight of the item at rank `i` is
- * `w(i) = (1 / n) * Σ(j = i .. n) 1 / j`. It is the centroid of the simplex of
- * all weight vectors consistent with the stated ordering, which makes it the
- * defensible default when the شیوه‌نامه states an order but not the magnitudes.
+ * For `n` ranked items, the ROC weight of the item at rank `i` is:
  *
- * @param {number} count
+ *     w(i) = (1 / n) * SUM over j = i..n of (1 / j)
+ *
+ * Mathematically this is the centroid of the set of all weight vectors that
+ * are consistent with the stated ordering. That makes it the defensible
+ * default when a document states an ORDER but not MAGNITUDES: it commits to
+ * nothing beyond the ranking that was actually written down.
+ *
+ * @param {number} count Number of ranked items.
  * @returns {number[]} Weights in rank order, summing to 1.
  */
 export function rankOrderCentroidWeights(count) {
@@ -123,8 +162,8 @@ export function rankOrderCentroidWeights(count) {
 const rocWeights = rankOrderCentroidWeights(dimensionDefinitions.length);
 
 /**
- * The eight preferential dimensions with their derived default weights,
- * expressed on a 0..100 scale so that the whole set sums to 100.
+ * The eight dimensions with their derived default weights, on a 0..100 scale
+ * summing to 100. This array is what the UI weight sliders bind to.
  */
 export const dimensions = dimensionDefinitions
   .slice()
@@ -137,16 +176,32 @@ export const dimensions = dimensionDefinitions
   }));
 
 /**
- * Preferential criteria («معیارهای ترجیحی»), verbatim from the شیوه‌نامه.
+ * THE 37 PREFERENTIAL CRITERIA, taken verbatim from the directive.
  *
- * `direction` marks whether the raw score is a benefit or a cost. Note that
- * the risk dimension and the cost-like financial criteria are modelled as
- * genuine cost criteria rather than being pre-inverted in the data, so that
- * the normalisation step — not the data entry clerk — owns the inversion.
+ * Codes follow the directive's own labelling: T = technical, R = risk,
+ * F = financial, EC = economic, S = social, E = environmental,
+ * O = organisational, C = competitive.
  *
- * `q` (indifference) and `p` (preference) are the PROMETHEE thresholds on the
- * normalised 0..100 scale. They express «آستانه ترجیح» and are exposed to the
- * sensitivity engine («تحلیل حساسیت آستانه‌ها»).
+ * FIELDS
+ * ------
+ * `direction`   benefit or cost — see the DIRECTION note above. The risk
+ *               dimension and the cost-like financial criteria are modelled as
+ *               genuine cost criteria; they are NOT pre-inverted in the data.
+ *
+ * `localWeight` weight WITHIN the dimension. Only the ratios matter — the
+ *               engine normalises each dimension's criteria to sum to that
+ *               dimension's share, so you do not have to make them total 100.
+ *
+ * `q`, `p`      PROMETHEE thresholds on the normalised 0..100 scale
+ *               [آستانه بی‌تفاوتی و آستانه ترجیح]:
+ *                 q = differences at or below this are treated as no
+ *                     difference at all (noise floor).
+ *                 p = differences at or above this count as full preference.
+ *               Between them preference rises linearly. RULE: p must be
+ *               greater than q. Raising q makes the criterion more forgiving
+ *               of small gaps; lowering p makes it more decisive.
+ *               The sensitivity engine sweeps these to test how stable the
+ *               ranking is against the thresholds you picked.
  */
 export const criteria = [
   // ─── بعد فنی (Technical) ────────────────────────────────────────────────
@@ -537,13 +592,22 @@ export const criteria = [
 ];
 
 /**
- * معیارهای الزامی — «فیلتر شماره یک».
+ * MANDATORY CRITERIA — FILTER #1 [معیارهای الزامی — فیلتر شماره یک].
  *
- * Every entry is a hard, binary gate: a project that does not satisfy it is
- * removed from the comparison matrix entirely rather than being penalised in
- * the score. `appliesTo` narrows a gate to a subset of projects — the
- * شیوه‌نامه applies the mega-project attachments only to «پروژه‌های
- * بزرگ‌مقیاس».
+ * Each entry is a hard binary gate. A project that fails one is REMOVED from
+ * the comparison matrix entirely — it is never merely penalised in its score.
+ * That is the directive's own wording and the reason screening is a separate
+ * engine rather than another criterion.
+ *
+ * `appliesTo` narrows a gate to a subset of projects:
+ *   "all"          — every project must answer it.
+ *   "megaProject"  — only projects with `classification.megaProject === true`.
+ *                    The directive attaches the extra sign-offs (M6-*) to
+ *                    large-scale projects only.
+ *
+ * To add a gate: append an entry here and add the matching key to each
+ * project's `mandatory` object. A project with no answer for an applicable gate
+ * is REJECTED, not waved through — screening deliberately fails closed.
  */
 export const mandatoryCriteria = [
   {
@@ -615,7 +679,9 @@ export const mandatoryCriteria = [
 ];
 
 /**
- * هفت حوزه مأموریتی شهرداری کرمان.
+ * The seven municipal mission domains [هفت حوزه مأموریتی].
+ * `key` values are referenced by `financialConstraints.domainShares` in
+ * `policy.js` — keep the two in sync.
  */
 export const missionDomains = [
   { key: "infrastructure", label: "زیربنایی، عمرانی، حمل‌ونقل و ترافیک" },
@@ -628,7 +694,7 @@ export const missionDomains = [
 ];
 
 /**
- * پنج دسته پروژه از نظر حوزه ماهیتی.
+ * The five project nature categories [حوزه ماهیتی].
  */
 export const natureCategories = [
   { key: "study", label: "مطالعات و طراحی" },
@@ -651,7 +717,7 @@ export const strategicGoals = [
 ];
 
 /**
- * Criteria grouped by the dimension they belong to.
+ * Criteria indexed by their dimension. Built once at module load.
  *
  * @type {Map<string, Array>}
  */
@@ -663,10 +729,14 @@ export const criteriaByDimension = new Map(
 );
 
 /**
- * The default export keeps the dimension-level shape the dashboard and the
- * frontend weight sliders already consume (`key`, `label`, `hint`, `weight`),
- * so the eight dimensions — not the thirty-seven leaf criteria — remain the
- * unit the expert panel moves sliders on. Leaf criteria are reachable through
- * `criteria` and `criteriaByDimension`.
+ * DEFAULT EXPORT = the eight dimensions.
+ *
+ * The dashboard and the weight sliders consume this shape (`key`, `label`,
+ * `hint`, `weight`). The eight dimensions — not the thirty-seven leaf criteria
+ * — are what an expert panel actually adjusts; putting 37 sliders in front of a
+ * committee is not a usable interface.
+ *
+ * The leaf criteria remain reachable via the named exports `criteria` and
+ * `criteriaByDimension`, and they are what the ranking engine evaluates on.
  */
 export default dimensions;

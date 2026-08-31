@@ -1,9 +1,17 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 export type ProjectCategory = string;
 
 export type ProjectStatus = string;
 
 /**
- * The eight preferential dimensions of the شیوه‌نامه, ranked 1..8 in the
+ * The eight preferential dimensions of the directive, ranked 1..8 in the
  * document itself. These — not the thirty-seven leaf criteria — are the
  * weighting surface the expert panel adjusts.
  */
@@ -19,7 +27,7 @@ export type CriterionKey =
 
 export type CriterionDirection = 'benefit' | 'cost';
 
-/** طبقه‌بندی پروژه — heterogeneous classes are never ranked in one matrix. */
+/** Project class. Heterogeneous classes are never ranked in one matrix. */
 export type ProjectClass =
   | 'statutory'
   | 'inProgress'
@@ -32,7 +40,7 @@ export type ProjectClass =
 export interface Criterion {
   key: CriterionKey;
   code: string;
-  /** The rank the شیوه‌نامه assigns this dimension (1 = most important). */
+  /** The rank the directive assigns this dimension (1 = most important). */
   rank: number;
   label: string;
   hint: string;
@@ -54,7 +62,7 @@ export interface LeafCriterion {
   p: number;
 }
 
-/** A binary gate of فیلتر شماره یک. */
+/** A binary pass/fail gate of filter 1. */
 export interface MandatoryCriterion {
   code: string;
   label: string;
@@ -81,7 +89,7 @@ export interface ProjectClassification {
   lowImpact: boolean;
 }
 
-/** داده‌های لازم برای ارزیابی آینده‌نگر پروژه‌های نیمه‌تمام. */
+/** Inputs required to evaluate an in-progress project on future cost and benefit. */
 export interface ProjectLifecycle {
   physicalProgressPercent: number;
   financialProgressPercent: number;
@@ -252,7 +260,7 @@ export interface WeightingResult {
   source: 'rank-order-centroid' | 'explicit' | 'ahp';
   dimensionWeights: Record<CriterionKey, number>;
   criterionWeights?: Record<string, number>;
-  /** شاخص سازگاری — present only for AHP. */
+  /** Consistency ratio — present only when weights came from an AHP matrix. */
   consistencyRatio: number | null;
   consistent: boolean;
   warnings: string[];
@@ -456,25 +464,25 @@ export interface PortfolioResult {
   neighborhoods: Neighborhood[];
 }
 
-/** Per-project outputs پیوست شماره دو requires from the sensitivity analysis. */
+/** Per-project outputs Appendix 2 requires from the sensitivity analysis. */
 export interface ProjectSensitivity {
   projectId: string;
   projectName: string;
   inBaselinePortfolio: boolean;
-  /** درصد سناریوهای انتخاب */
+  /** Percentage of scenarios in which this project made the portfolio. */
   selectionRatePercent: number;
   membershipStability: number;
   averageRank: number;
   rankRange: { best: number | null; worst: number | null; reversal: number };
-  /** پروژه جایگزین */
+  /** The project that most often replaces this one when it drops out. */
   substitute: { projectId: string; projectName: string | null; frequency: number } | null;
-  /** حداقل بودجه لازم برای ورود */
+  /** Smallest budget at which this project still enters the portfolio. */
   minimumEntryBudget: number | null;
-  /** حساسیت به تغییر وزن‌ها */
+  /** Mean rank shift under weight perturbation. Higher = less stable. */
   weightSensitivity: number;
-  /** حساسیت به آستانه‌های ترجیح */
+  /** Mean rank shift under preference-threshold perturbation. */
   thresholdSensitivity: number;
-  /** حساسیت به افزایش هزینه */
+  /** Loss of portfolio membership per unit of cost overrun. */
   costSensitivity: number;
 }
 
@@ -493,14 +501,14 @@ export interface SensitivityResult {
     projects: ProjectSensitivity[];
     summary: { averageMembershipStability: number; maxRankReversal: number };
   };
-  /** بررسی رتبه‌برگشتی */
+  /** Rank-reversal test: does removing one project reorder the others? */
   rankReversalTest: Array<{
     removedProjectId: string;
     removedProjectName: string;
     rankReversalDetected: boolean;
     affectedProjects: string[];
   }>;
-  /** علت اصلی حذف یا انتخاب */
+  /** The binding reason each project was included or excluded. */
   selectionReasons: Array<{ projectId: string; inPortfolio: boolean; reason: string }>;
 }
 

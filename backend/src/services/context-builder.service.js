@@ -1,4 +1,13 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import env from "../config/env.js";
+import { product } from "../config/branding.js";
 import { anonymizeContext } from "../security/guardrails.js";
 import * as decisionService from "./decision.service.js";
 import * as dashboardService from "./dashboard.service.js";
@@ -6,13 +15,13 @@ import * as dashboardService from "./dashboard.service.js";
 /**
  * Build the context handed to the language model.
  *
- * حداقل دسترسی برای عامل‌های هوش مصنوعی — «فاز سوم، بند ۲-۵». The model gets the
+ * LEAST PRIVILEGE FOR AI AGENTS. The model gets the
  * minimum needed for the task it was asked to do, not the whole application
  * state. The previous implementation shipped the entire dashboard, ranking and
  * scenario set on every call, which is both a data-governance problem (a
  * third-party API receives everything) and a cost problem.
  *
- * ترسیم جریان داده: this function is the single point where municipality data
+ * DATA FLOW: this function is the single point where municipality data
  * can leave for a model. Everything it returns is anonymised first, and when
  * the deployment has not explicitly opted in to external processing, narrative
  * free-text fields are dropped entirely.
@@ -69,8 +78,8 @@ export async function buildContext({ task, projectIds } = {}) {
   const context = {
     generatedAt: new Date().toISOString(),
     application: {
-      name: "سامانه مدیریت سبد پروژه شهرداری کرمان",
-      basis: "شیوه‌نامه شناسایی، انتخاب، اولویت‌بندی و تعریف سبد پروژه — ویرایش پنجم"
+      name: product.fullFa,
+      basis: product.basisFa
     },
     scope: [...scope]
   };

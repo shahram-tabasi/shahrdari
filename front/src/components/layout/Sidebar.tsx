@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import logo from '../../assets/logo.png';
@@ -13,6 +21,7 @@ import {
 import { useApp } from '../../contexts/AppContext';
 import { useData } from '../../contexts/DataContext';
 import { exportReport } from '../../services/api';
+import { client, product } from '../../config/branding';
 
 export const navItems = [
   { to: '/', fa: 'میز کار', en: 'Dashboard', icon: LayoutDashboardIcon, hint: 'نمای کلی سبد' },
@@ -36,7 +45,9 @@ export function Sidebar() {
       setExporting(type);
 
       const payload = {
-        title: 'Smart-VAP Municipality Report',
+        // Report title follows the UI language, so an English session
+        // produces an English-titled report.
+        title: `${t(product.fullFa, product.fullEn)} — ${t(client.fa, client.en)}`,
         projects,
         ranking: [],
         criteria,
@@ -83,7 +94,7 @@ export function Sidebar() {
 
         <div className="leading-tight">
           <p className="text-lg font-extrabold tracking-tight">
-            Smart-VAP
+            {t(product.fa, product.en)}
           </p>
 
           <p className="text-[11px] text-white/55">

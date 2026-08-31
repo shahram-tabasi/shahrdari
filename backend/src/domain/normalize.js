@@ -1,9 +1,18 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
  * Score resolution and normalisation.
  *
- * These are pure functions with no I/O, so the decision model can be unit
- * tested independently of the HTTP layer — a requirement of «دفترچه مدل
- * تصمیم‌گیری و فرمول‌ها» among the deliverables.
+ * Pure functions, no I/O. That is intentional: the decision model has to be
+ * unit-testable independently of the HTTP layer, and every formula here is
+ * documented in the decision-model handbook deliverable
+ * [دفترچه مدل تصمیم‌گیری و فرمول‌ها] — see docs/decision-model.md.
  */
 
 import { DIRECTION } from "../data/criteria.js";
@@ -21,9 +30,9 @@ export const SCORE_MAX = 100;
  *   1. `project.criterionScores[code]` — the authoritative, criterion-level value.
  *   2. `project.scores[dimension]`     — the dimension-level fallback.
  *
- * The fallback is deliberately reported rather than hidden: a portfolio
+ * The fallback is deliberately REPORTED rather than hidden: a portfolio
  * decision defended with a number nobody entered is exactly the failure mode
- * «کنترل کیفیت داده» exists to prevent.
+ * the data-quality module exists to prevent.
  *
  * @param {Object} project
  * @param {Object} criterion

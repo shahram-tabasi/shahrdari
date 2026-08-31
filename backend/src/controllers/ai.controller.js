@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import * as aiService from "../services/ai.service.js";
 import { chargeTokens, tokenBudgetReport } from "../middleware/rate-limit.middleware.js";
 import { successResponse } from "../utils/api-response.js";
@@ -41,7 +49,7 @@ export async function runTask(req, res, next) {
       requestId: req.id
     });
 
-    // Meter the tokens this call actually consumed («محدودیت تعداد توکن»).
+    // Meter the tokens this call actually consumed against the daily budget.
     chargeTokens(req.tokenBudgetKey, result.usage?.totalTokens ?? 0);
 
     res.status(200).json(
@@ -89,7 +97,7 @@ export function getSuggestion(req, res, next) {
 }
 
 /**
- * تأیید کارشناس — the human-in-the-loop decision on a suggestion.
+ * Expert review — the human-in-the-loop decision on a suggestion.
  */
 export function reviewSuggestion(req, res, next) {
   try {

@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import { Router } from "express";
 import { z } from "zod";
 
@@ -12,7 +20,7 @@ const router = Router();
 /**
  * The audit trail is readable only by principals holding `audit:read`, and it
  * is read-only over HTTP: there is no route that edits or deletes a record.
- * «این الگ‌ها باید در برابر حذف یا دستکاری محافظت شوند» — the strongest
+ * Audit records must be protected against deletion and modification; the strongest
  * protection the API layer can offer is to expose no mutation at all.
  */
 router.use(authenticate(), authorize(PERMISSION.AUDIT_READ));

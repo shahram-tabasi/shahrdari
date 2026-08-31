@@ -1,10 +1,19 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import { z } from "zod";
 
 import { AI_TASK, REVIEW_STATUS } from "../services/ai-governance.service.js";
 
 /**
- * اعتبارسنجی ورودی — «ترجیحاً بر اساس یک لیست سفید از مقادیر، فرمت‌ها یا
- * کاراکترهای مجاز».
+ * INPUT VALIDATION — allowlist-based, as the security standard requires:
+ * validate against a permitted set of values, formats and characters rather
+ * than trying to blocklist bad ones.
  *
  * Every schema here is `.strict()`: an unexpected property is rejected rather
  * than ignored, so a client cannot smuggle a field past validation in the hope

@@ -1,31 +1,43 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
- * PDF Footer Section
+ * PDF footer: the block repeated at the bottom of every report page.
  *
- * Generates the final footer area
- * for every PDF report page.
- *
- * Includes:
- * - Organization information
- * - Generation time
- * - Confidentiality notice
- * - Page information
+ * Carries the client name, the vendor name, the generation timestamp, the
+ * confidentiality marking and the copyright line. Labels are bilingual
+ * (Persian first, then English) to match the rest of the product.
  */
 
 import {
-    APP_INFO,
-    EXPORT
+    APP_INFO
 } from "../shared/constants.js";
+
+import { copyright } from "../../config/branding.js";
 
 import {
     buildTimestamp
 } from "../shared/helper.js";
 
 
+/**
+ * Report footer.
+ *
+ * `report.organization` lets a caller override the client name printed on the
+ * left (for example when the same platform serves several municipalities);
+ * the vendor line beneath it always names us and is not overridable, because
+ * a formal deliverable must state who built it.
+ */
 export function renderFooterSection(report = {}) {
 
     const organization =
         report.organization ??
-        APP_INFO.company;
+        APP_INFO.client;
 
 
     return `
@@ -39,14 +51,14 @@ ${organization}
 
 <br>
 
-${EXPORT.author}
+${APP_INFO.company}
 
 </div>
 
 
 <div>
 
-Generated:
+تاریخ تولید / Generated:
 
 ${buildTimestamp()}
 
@@ -55,11 +67,11 @@ ${buildTimestamp()}
 
 <div>
 
-Confidential Report
+گزارش محرمانه / Confidential
 
 <br>
 
-© ${new Date().getFullYear()}
+${copyright("fa")}
 
 </div>
 
@@ -109,7 +121,7 @@ padding:0 15mm;
 
 <div>
 
-Municipality AI Platform
+${APP_INFO.company}
 
 </div>
 

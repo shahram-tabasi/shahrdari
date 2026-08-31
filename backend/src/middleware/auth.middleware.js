@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import crypto from "node:crypto";
 
 import env from "../config/env.js";
@@ -11,7 +19,7 @@ import { AUDIT_CATEGORY } from "../services/audit.service.js";
 import HttpError from "../utils/http-error.js";
 
 /**
- * احراز هویت و کنترل دسترسی — «فاز دوم، بند ۳-۴».
+ * AUTHENTICATION AND ACCESS CONTROL.
  *
  * The token format here is a signed, expiring bearer token that carries the
  * principal's identity and role. It is deliberately a thin, self-contained
@@ -136,7 +144,7 @@ export function verifyToken(token) {
     throw invalid();
   }
 
-  // اعمال محدودیت زمانی نشست‌ها.
+  // Enforce the session time limit.
   if (!Number.isFinite(claims.exp) || claims.exp <= Date.now()) {
     throw new HttpError(401, "نشست منقضی شده است؛ دوباره وارد شوید.");
   }

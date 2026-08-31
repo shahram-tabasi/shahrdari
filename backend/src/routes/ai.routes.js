@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import { Router } from "express";
 
 import { PERMISSION } from "../config/roles.js";
@@ -30,7 +38,7 @@ router.get("/status", authorize(PERMISSION.AI_USE), aiController.getStatus);
 /**
  * Running a task: the tightest limits in the system.
  *
- * محدودسازی نرخ و جلوگیری از مصرف بی‌رویه — a request cap bounds how often the
+ * Rate limiting and unbounded-consumption prevention: a request cap bounds how often the
  * model can be called, and the token budget bounds what those calls may cost.
  * Both are needed: neither alone bounds spend.
  */
@@ -48,7 +56,7 @@ router.post(
 );
 
 /**
- * Suggestion review — «تأیید کارشناس».
+ * Suggestion review — the expert approval step.
  *
  * Separated from `ai:use` on purpose: the person who asked the model a question
  * is not automatically the person entitled to accept its answer into the

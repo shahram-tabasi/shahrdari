@@ -1,3 +1,12 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
+import { reportFileSlug } from '../config/branding';
 import type {
   AiStatus,
   AiSuggestion,
@@ -194,13 +203,13 @@ export function getCurrentUser(): Promise<CurrentUser> {
 
 /**
  * The full criteria model: eight dimensions, thirty-seven preferential
- * criteria and the mandatory gates of فیلتر شماره یک.
+ * criteria and the mandatory gates of filter 1.
  */
 export function getCriteriaModel(): Promise<CriteriaModel> {
   return request<CriteriaModel>('/criteria/model');
 }
 
-/** ارزیابی — screening, data quality and life-cycle evaluation. */
+/** EVALUATION — screening, data quality and life-cycle assessment. */
 export function evaluateProjects(projectIds?: string[]) {
   return request<EvaluationResult>('/decisions/evaluations', {
     method: 'POST',
@@ -208,7 +217,7 @@ export function evaluateProjects(projectIds?: string[]) {
   });
 }
 
-/** فیلتر ۲ — ranking. Weights may be given directly or via an AHP matrix. */
+/** FILTER 2 — ranking. Weights may be given directly or via an AHP matrix. */
 export function createRanking(input: RankingRequest = {}) {
   return request<RankingResult>('/decisions/rankings', {
     method: 'POST',
@@ -216,7 +225,7 @@ export function createRanking(input: RankingRequest = {}) {
   });
 }
 
-/** فیلتر ۳ — portfolio construction under the full constraint set. */
+/** FILTER 3 — portfolio construction under the full constraint set. */
 export function optimizePortfolio(input: PortfolioRequest) {
   return request<PortfolioResult>('/decisions/portfolio', {
     method: 'POST',
@@ -224,7 +233,7 @@ export function optimizePortfolio(input: PortfolioRequest) {
   });
 }
 
-/** تحلیل حساسیت و پایداری. */
+/** Sensitivity and stability analysis. */
 export function analyzeSensitivity(input: PortfolioRequest & { scenarios?: number }) {
   return request<SensitivityResult>('/decisions/sensitivity', {
     method: 'POST',
@@ -255,7 +264,7 @@ export function runAiTask(input: {
   });
 }
 
-/** تأیید کارشناس — accept or reject a model suggestion. */
+/** Expert review — accept or reject a model suggestion. */
 export function reviewAiSuggestion(
   id: string,
   input: { status: 'accepted' | 'rejected'; reason: string; correctedOutput?: string }
@@ -272,7 +281,7 @@ export function listAiSuggestions(status?: string) {
   return request<AiSuggestion[]>(`/ai/suggestions${query}`);
 }
 
-/** سوابق ممیزی. */
+/** Audit trail. */
 export function getAuditTrail(limit = 100) {
   return request<AuditEntryRecord[]>(`/audit?limit=${limit}`);
 }
@@ -332,8 +341,10 @@ export async function exportReport(
       : type;
 
 
+  // Filename slug is ASCII-only on purpose — Persian characters in a
+  // download filename break on some Windows/browser combinations.
   link.download =
-    `Smart-VAP-Report-${Date.now()}.${extension}`;
+    `${reportFileSlug}-${Date.now()}.${extension}`;
 
 
   document.body.appendChild(link);

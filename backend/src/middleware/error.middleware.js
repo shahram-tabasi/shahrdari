@@ -1,10 +1,18 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import env from "../config/env.js";
 import * as audit from "../services/audit.service.js";
 import { AUDIT_CATEGORY } from "../services/audit.service.js";
 import { errorResponse } from "../utils/api-response.js";
 
 /**
- * رفتار امن در حالت خطا — «فاز دوم، بند ۴-۴».
+ * FAIL-SECURE ERROR HANDLING.
  *
  * The document's requirements are specific, and the previous implementation met
  * none of them: it returned `err.stack` to the client in development and echoed
@@ -13,13 +21,13 @@ import { errorResponse } from "../utils/api-response.js";
  *
  * The rules enforced here:
  *
- *   - جزئیات فنی خطا به کاربر نمایش داده نشود.
- *   - stack trace ها افشا نشوند — in *any* environment. A developer reads the
+ *   - Technical error detail is never shown to the user.
+ *   - Stack traces are never disclosed, in ANY environment. A developer reads the
  *     stack in the server log, correlated by request id; it never travels in a
  *     response body, because "development" configuration reaching a shared
  *     environment is exactly how these leaks happen.
- *   - system prompt ها یا دستورهای داخلی مدل افشا نشوند.
- *   - خطای عمومی و کنترل‌شده نمایش داده شود.
+ *   - System prompts and internal model instructions are never disclosed.
+ *   - The user sees a generic, controlled message.
  *
  * Only errors the application raised deliberately (`HttpError`, carrying a
  * 4xx status) are considered safe to describe to the caller. Everything else —

@@ -1,11 +1,25 @@
-/**
- * طبقه‌بندی پروژه‌ها — پیوست شماره دو شیوه‌نامه.
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
  *
- * The شیوه‌نامه is explicit that «پروژه‌های کاملاً ناهمگون نباید بدون قواعد
- * تفکیکی در یک ماتریس واحد قرار گیرند»: comparing an emergency retrofit
- * against a beautification project in a single matrix produces a result that
- * cannot be defended. Each class therefore carries its own evaluation route,
- * and the ranking engine builds one comparison matrix per class.
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
+/**
+ * PROJECT CLASSIFICATION [طبقه‌بندی پروژه‌ها — پیوست شماره دو].
+ *
+ * The directive is explicit that wholly heterogeneous projects must not be
+ * placed in a single comparison matrix without separating rules: comparing an
+ * emergency structural retrofit against a beautification scheme in one matrix
+ * produces a result that cannot be defended.
+ *
+ * So each class carries its own evaluation route, and the ranking engine builds
+ * ONE COMPARISON MATRIX PER CLASS.
+ *
+ * `comparable: false` means the class bypasses ranking entirely and enters the
+ * portfolio on its own track — it still consumes budget and still counts
+ * towards policy minimums, but it gets no comparative rank.
  */
 
 /**
@@ -111,9 +125,12 @@ export function findProjectClass(key) {
 }
 
 /**
- * واحد تصمیم — the شیوه‌نامه requires the proposal to state which entity is
- * being selected, because selecting a whole programme is not the same as
- * selecting one executable phase of it.
+ * DECISION UNITS [واحد تصمیم].
+ *
+ * The directive requires the system to state WHICH entity is being selected,
+ * because selecting a whole programme is not the same as selecting one
+ * executable phase of it. Recorded per project in
+ * `classification.decisionUnit`.
  */
 export const decisionUnits = [
   { key: "programme", label: "طرح کلان" },

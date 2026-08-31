@@ -1,16 +1,24 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import env from "../config/env.js";
 import * as audit from "../services/audit.service.js";
 import { AUDIT_CATEGORY } from "../services/audit.service.js";
 import HttpError from "../utils/http-error.js";
 
 /**
- * محدودسازی نرخ و جلوگیری از مصرف بی‌رویه — «فاز ششم، بند ۲-۸».
+ * RATE LIMITING AND UNBOUNDED-CONSUMPTION PREVENTION.
  *
  * Two separate budgets, because the two resources fail differently:
  *
  *   - A general per-principal request limit, protecting the API from DoS.
- *   - A much tighter AI limit *plus* a token budget, because «پردازش مدل‌های AI
- *     معمولاً پرهزینه است؛ هم از نظر منابع محاسباتی و هم از نظر هزینه توکن».
+ *   - A much tighter AI limit PLUS a token budget, because model inference is
+ *     expensive in both compute and per-token cost.
  *     Counting requests alone does not bound spend — one request can burn a
  *     day's tokens — so the token budget is metered separately after the call.
  *

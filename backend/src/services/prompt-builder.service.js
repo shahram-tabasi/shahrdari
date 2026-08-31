@@ -1,3 +1,12 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
+import { product } from "../config/branding.js";
 import { describePolicy } from "./ai-governance.service.js";
 
 /**
@@ -31,7 +40,7 @@ export function buildPrompt({ task, message, context }) {
   const policy = describePolicy();
   const taskDefinition = policy.allowedTasks.find(entry => entry.key === task);
 
-  const system = `شما دستیار تحلیلی سامانه مدیریت سبد پروژه شهرداری کرمان هستید و طبق «شیوه‌نامه شناسایی، انتخاب، اولویت‌بندی و تعریف سبد پروژه» کار می‌کنید.
+  const system = `شما دستیار تحلیلی ${product.fullFa} هستید و طبق «${product.basisFa}» کار می‌کنید.
 
 نقش شما «ابزار کمکی» است، نه تصمیم‌گیرنده. وظیفه جاری شما فقط این است:
 ${taskDefinition ? `- ${taskDefinition.label}` : "- تحلیل کمکی در چارچوب مجاز"}

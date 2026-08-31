@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import { z } from "zod";
 
 import { dimensions } from "../data/criteria.js";
@@ -212,7 +220,7 @@ export const portfolioSchema = z
 /**
  * Sensitivity analysis takes the portfolio inputs plus a scenario count.
  * The sweep is expensive, so the count is capped rather than left to the
- * caller — «جلوگیری از ایجاد درخواست‌های تکراری یا سنگین».
+ * caller: the standard requires bounding heavy and repeated requests.
  */
 export const sensitivityRequestSchema = z
   .object({

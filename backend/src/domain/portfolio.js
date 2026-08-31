@@ -1,22 +1,36 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
- * موتور بهینه‌سازی — «تشکیل سبد تحت محدودیت‌ها».
+ * PORTFOLIO OPTIMISATION ENGINE [موتور بهینه‌سازی].
  *
- * پیوست شماره دو draws a sharp line the previous implementation did not:
+ * Appendix 2 of the directive draws a line that a simple implementation misses:
  *
- *   «رتبه بالاتر یک پروژه الزاماً به معنای عضویت آن در سبد نهایی نیست؛ زیرا
- *    ممکن است ترکیب چند پروژه با رتبه‌های پایین‌تر، ارزش بیشتر، پوشش عادلانه‌تر
- *    یا امکان اجرای بهتری ایجاد کند.»
+ *   "A higher rank does not necessarily mean membership in the final
+ *    portfolio, because a combination of several lower-ranked projects may
+ *    deliver more value, fairer coverage, or better deliverability."
  *
- * So portfolio selection is a *combinatorial* problem over a multi-objective
- * value function, not a greedy walk down the ranking. This module models it as
- * a constrained knapsack and solves it with a randomised greedy + local-search
- * scheme: deterministic for a given seed, fast enough for interactive scenario
- * analysis, and — unlike a pure greedy pass — able to drop a high-ranking
- * project when a cheaper combination scores better under the constraints.
+ * So portfolio selection is a COMBINATORIAL problem over a multi-objective
+ * value function — not a greedy walk down the ranking. This module models it as
+ * a constrained knapsack and solves it with a randomised-greedy construction
+ * plus local search. That scheme is:
+ *   - deterministic for a given seed (so results are reproducible),
+ *   - fast enough for interactive scenario analysis, and
+ *   - able to DROP a high-ranking project when a cheaper combination scores
+ *     better under the constraints, which a greedy pass structurally cannot do.
  *
  * Constraint families implemented, all from the appendix:
- *   محدودیت‌های مالی · وابستگی پروژه‌ها · عدالت منطقه‌ای · ظرفیت اجرایی ·
- *   محدودیت‌های سیاستی.
+ *   financial · project dependencies · regional equity · delivery capacity ·
+ *   policy rules.
+ *
+ * IF RESULTS LOOK WRONG: check `findViolations` first. An "odd" portfolio is
+ * usually a constraint doing its job, and every violation carries a message
+ * saying which rule fired and by how much.
  */
 
 import {
@@ -121,7 +135,8 @@ export function scoreObjectives(projects, context = {}) {
  * Check a candidate selection against every constraint family.
  *
  * Returns the list of violations rather than a boolean, so the caller can
- * report *which* rule blocked a portfolio — «علت اصلی حذف یا انتخاب».
+ * report WHICH rule blocked a portfolio — that is what the report needs in
+ * order to state a reason for each project's inclusion or exclusion.
  *
  * @param {Array} selection
  * @param {Object} context
@@ -177,7 +192,7 @@ export function findViolations(selection, context = {}) {
   const under = (actual, required) =>
     required > 0 ? (required - actual) / required : 0;
 
-  // ── محدودیت‌های مالی ──────────────────────────────────────────────────
+  // ── FINANCIAL CONSTRAINTS ────────────────────────────────────────────
   if (totalBudget > budgetCap) {
     push(
       "financial",
@@ -239,11 +254,11 @@ export function findViolations(selection, context = {}) {
     );
   }
 
-  // بودجه‌های غیرقابل‌انتقال: an earmarked fund is a *partial* source — a
-  // project draws a stated amount from it and funds the rest elsewhere — so
-  // the cap applies to the sum of draws, not to the budgets of the projects
-  // touching the fund. It may also only be drawn on by eligible categories,
-  // which is what makes the fund non-transferable.
+  // Ring-fenced funds. An earmarked fund is a PARTIAL source: a project draws
+  // a stated amount from it and funds the rest elsewhere, so the cap applies to
+  // the sum of draws, not to the budgets of the projects touching the fund.
+  // Only eligible categories may draw on it at all — that is what makes the
+  // fund non-transferable.
   (financial.earmarkedFunds ?? []).forEach(fund => {
     const drawing = selection.filter(
       project => project.finance?.earmarkedFund?.key === fund.key
@@ -326,7 +341,7 @@ export function findViolations(selection, context = {}) {
     }
   });
 
-  // ── وابستگی پروژه‌ها ──────────────────────────────────────────────────
+  // ── PROJECT DEPENDENCIES ─────────────────────────────────────────────
   const selectedIds = new Set(selection.map(project => String(project.id)));
 
   selection.forEach(project => {
@@ -370,7 +385,7 @@ export function findViolations(selection, context = {}) {
     }
   });
 
-  // ── عدالت منطقه‌ای ────────────────────────────────────────────────────
+  // ── REGIONAL EQUITY ──────────────────────────────────────────────────
   if (totalBudget > 0 && deprived.size > 0) {
     const share =
       (selection
@@ -389,7 +404,7 @@ export function findViolations(selection, context = {}) {
     }
   }
 
-  // ── ظرفیت اجرایی ──────────────────────────────────────────────────────
+  // ── DELIVERY CAPACITY ────────────────────────────────────────────────
   if (selection.length > capacity.maxConcurrentProjects) {
     push(
       "capacity",
@@ -443,7 +458,7 @@ export function findViolations(selection, context = {}) {
     );
   }
 
-  // ── محدودیت‌های سیاستی ────────────────────────────────────────────────
+  // ── POLICY CONSTRAINTS ───────────────────────────────────────────────
   if (totalBudget > 0) {
     const shareOf = predicate =>
       (selection.filter(predicate).reduce((sum, p) => sum + (p.budget ?? 0), 0) /
@@ -522,7 +537,7 @@ export function findViolations(selection, context = {}) {
 /**
  * Projects the policy forces into the portfolio regardless of their rank:
  * statutory and emergency classes, and half-finished projects whose physical
- * progress clears «الزام تکمیل پروژه‌های دارای پیشرفت باال».
+ * progress clears the mandatory-completion threshold in `policy.js`.
  *
  * @param {Array} projects
  * @param {Object} [policy]

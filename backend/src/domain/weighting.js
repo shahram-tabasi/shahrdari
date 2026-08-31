@@ -1,5 +1,13 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
- * موتور وزن‌دهی — «محاسبه وزن‌ها و شاخص سازگاری».
+ * WEIGHTING ENGINE — computing weights and the consistency ratio.
  *
  * Three weight sources are supported, in increasing order of authority:
  *

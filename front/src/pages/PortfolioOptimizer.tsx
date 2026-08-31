@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -44,8 +52,8 @@ export function PortfolioOptimizer() {
    * greedy walk down the ranking.
    *
    * This page used to fill the budget by taking projects in rank order until
-   * the money ran out. پیوست شماره دو rules that out explicitly — «رتبه بالاتر
-   * یک پروژه الزاماً به معنای عضویت آن در سبد نهایی نیست» — because a greedy
+   * the money ran out. Appendix 2 of the directive rules that out explicitly —
+   * a higher rank does not imply portfolio membership — because a greedy
    * pass cannot honour dependencies, regional equity, execution capacity or
    * the policy minimums, and cannot notice that two cheaper projects beat one
    * expensive higher-ranked one.

@@ -1,10 +1,18 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
- * Neighborhood dataset for «تحلیل عدالت فضایی».
+ * NEIGHBOURHOOD DATASET — inputs for the spatial-equity analysis.
  *
  * `deprivation` is kept as a stored value for backward compatibility with the
  * existing dashboard, but it is no longer the authority: the equity engine
  * recomputes the deprivation index from `indicators` using the ten indicators
- * پیوست شماره دو proposes, so the number is reproducible and auditable rather
+ * the directive proposes, so the number is reproducible and auditable rather
  * than a magic constant.
  *
  * Every indicator is recorded on a 0..100 raw scale. The engine — not the data

@@ -1,12 +1,21 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
- * نقش‌ها و مجوزها — the «مدیریت امنیت» module of پیوست شماره دو.
+ * ROLES AND PERMISSIONS — the security-management module of the directive.
  *
  * Access control is permission-based rather than role-based at the check site:
  * a route asks for the *permission* it needs, and roles are bundles of
- * permissions. That keeps «جلوگیری از دسترسی غیرمجاز افقی و عمودی» enforceable,
+ * permissions. That keeps horizontal and vertical privilege escalation
+ * preventable,
  * because adding a role can never silently widen an existing route.
  *
- * The permission set is aligned with what the شیوه‌نامه separates: proposing a
+ * The permission set mirrors what the directive separates: proposing a
  * project, approving criteria and weights, running the engines, and approving
  * an AI suggestion are four different authorities held by four different people.
  */
@@ -16,7 +25,7 @@ export const PERMISSION = Object.freeze({
   PROJECT_WRITE: "project:write",
 
   CRITERIA_READ: "criteria:read",
-  /** تعریف شاخص، مقیاس، جهت و منبع داده — an official act. */
+  /** Defining indicators, scales, directions and data sources — an official act. */
   CRITERIA_WRITE: "criteria:write",
 
   /** Running the ranking, portfolio and sensitivity engines. */
@@ -26,7 +35,7 @@ export const PERMISSION = Object.freeze({
 
   /** Asking the language model for assistance. */
   AI_USE: "ai:use",
-  /** تأیید کارشناس — accepting or rejecting a model suggestion. */
+  /** Expert review: accepting or rejecting a model suggestion. */
   AI_REVIEW: "ai:review",
 
   REPORT_EXPORT: "report:export",

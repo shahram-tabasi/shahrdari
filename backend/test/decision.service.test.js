@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -9,8 +17,11 @@ import {
 } from "../src/services/decision.service.js";
 
 /**
- * Tests for the three filters of the شیوه‌نامه. Each one asserts a rule the
- * document states, not just that the code runs.
+ * Tests for the directive's three filters.
+ *
+ * Each test asserts a RULE THE DOCUMENT STATES, not merely that the code runs.
+ * If you change engine behaviour and a test here fails, check the directive
+ * before changing the test — the assertion is probably the specification.
  */
 
 test("فیلتر ۱ — a project failing a mandatory criterion is excluded, not penalised", async () => {
@@ -71,8 +82,9 @@ test("default dimension weights follow the شیوه‌نامه's own ranking", a
 
   assert.equal(result.weighting.source, "rank-order-centroid");
 
-  // The document ranks: اجتماعی 1، مالی 2، زیست‌محیطی 3، فنی 4،
-  // اقتصادی 5، سازمانی 6، ریسک 7، رقابتی 8.
+  // The directive's dimension ranking, most important first:
+  // social 1, financial 2, environmental 3, technical 4,
+  // economic 5, organisational 6, risk 7, competitive 8.
   const order = [
     "social",
     "financial",

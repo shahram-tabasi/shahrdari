@@ -1,25 +1,54 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
- * Demo project dataset shaped after the data model پیوست شماره دو of the
- * شیوه‌نامه requires.
+ * PROJECT DATASET — pilot seed data.
  *
- * IMPORTANT — this is illustrative seed data for the pilot, not municipal
- * record. In the operational system every field below arrives from the
- * «مدیریت شناسنامه پروژه» and «کنترل کیفیت داده» modules and carries its own
- * provenance. The data-quality engine reports which fields are missing rather
- * than letting the ranking engine silently invent them.
+ * !! THIS IS ILLUSTRATIVE SEED DATA, NOT MUNICIPAL RECORD. !!
+ * In the operational system every field below arrives from the project-record
+ * and data-quality modules and carries its own provenance. Replace this file
+ * with a database-backed repository before go-live; see
+ * `repositories/decision.repository.js`, which is the seam for that swap.
  *
- * Field groups, mirroring the شیوه‌نامه:
+ * FIELD GROUPS (each mirrors a section of the directive's data model):
  *
- * - `classification` — طبقه، حوزه مأموریتی، حوزه ماهیتی و واحد تصمیم.
- * - `mandatory`      — پاسخ معیارهای الزامی (فیلتر شماره یک).
- * - `scores`         — امتیاز سطح بعد (۸ بعد).
- * - `criterionScores`— امتیاز سطح معیار (کدهای T1..C2). Criteria absent here
- *                      fall back to the dimension score and the fallback is
- *                      recorded, never hidden.
- * - `lifecycle`      — داده‌های لازم برای ارزیابی آینده‌نگر پروژه‌های نیمه‌تمام.
- * - `finance`        — جریان نقدی سالانه، تعهدات آتی و ترکیب منابع.
- * - `dependencies`   — پیش‌نیازی، ناسازگاری و گروه‌های «حداقل یکی».
- * - `readiness`      — آمادگی اسناد، مجوزها و تملک زمین (ظرفیت اجرایی).
+ *   classification    Project class, mission domain, nature category and
+ *                     decision unit. Drives which comparison matrix the
+ *                     project lands in — see `data/project-classes.js`.
+ *
+ *   mandatory         Answers to the filter-1 pass/fail gates. Keys must match
+ *                     the codes in `data/criteria.js`. A MISSING key means
+ *                     REJECTED, not "assumed compliant".
+ *
+ *   scores            Dimension-level scores (the 8 dimensions).
+ *
+ *   criterionScores   Criterion-level scores (codes T1..C2). Sparse on purpose.
+ *                     A criterion absent here falls back to its dimension score
+ *                     and the fallback is RECORDED in the data-quality report,
+ *                     never silently hidden.
+ *
+ *   lifecycle         Inputs required to evaluate an in-progress project on
+ *                     future cost and benefit. Mandatory for the `inProgress`
+ *                     class; a missing field is a blocking finding.
+ *
+ *   finance           Annual cash flow, future commitments and funding mix.
+ *                     `cashFlow` keys are Persian calendar years and should sum
+ *                     to roughly `lifecycle.costToComplete` — the data-quality
+ *                     engine warns when they drift apart by more than 5%.
+ *
+ *   dependencies      Prerequisites, mutual exclusions and "at least one of"
+ *                     groups. Referenced ids must exist or screening fails.
+ *
+ *   readiness         Document, permit and land-acquisition readiness. Feeds
+ *                     the delivery-capacity constraints.
+ *
+ * Persian strings here are user-visible content (names, districts, rationale
+ * text), not comments.
  */
 
 const projects = [
@@ -781,8 +810,8 @@ const projects = [
 ];
 
 /**
- * گروه‌های «حداقل یکی از دو پروژه باید انتخاب شود».
- * Referenced from `dependencies.group` above.
+ * "At least one of" dependency groups: at least one member of the group must
+ * appear in the portfolio. Referenced from each project's `dependencies.group`.
  */
 export const dependencyGroups = [
   {

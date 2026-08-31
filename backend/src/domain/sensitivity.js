@@ -1,17 +1,30 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
- * تحلیل حساسیت و پایداری.
+ * SENSITIVITY AND STABILITY ANALYSIS [تحلیل حساسیت و پایداری].
  *
- * پیوست شماره دو asks for a specific list of validations — weight sensitivity,
- * threshold sensitivity, add/drop testing, rank reversal, budget change and
- * portfolio-membership stability — and a specific list of per-project outputs:
+ * Appendix 2 of the directive asks for a specific list of validations —
+ * weight sensitivity, threshold sensitivity, add/drop testing, rank reversal,
+ * budget change and portfolio-membership stability — and a specific list of
+ * per-project outputs. All of them are produced here; see `perProject` below
+ * for the mapping.
  *
- *   درصد سناریوهای انتخاب · حداقل بودجه لازم برای ورود · حساسیت به افزایش هزینه
- *   · حساسیت به تغییر وزن‌ها · حساسیت به آستانه‌های ترجیح · پروژه جایگزین ·
- *   علت اصلی حذف یا انتخاب.
+ * WHY THIS IS SLOW, AND WHY IT HAS TO BE
+ * --------------------------------------
+ * Every scenario re-runs the WHOLE pipeline: re-weight, re-rank, re-optimise.
+ * A sensitivity analysis that perturbs the weights but reuses the baseline
+ * ranking measures nothing at all. Cost scales with `scenarios`, which is why
+ * the API caps it.
  *
- * Each of those is produced here. The scenario sweep is seeded, so a report
- * that quotes "این پروژه در ۸۷٪ سناریوها انتخاب شد" can be regenerated and
- * checked rather than taken on trust.
+ * REPRODUCIBILITY: the sweep is seeded from an explicit `seed`, so a report
+ * quoting "selected in 87% of scenarios" can be regenerated and checked rather
+ * than taken on trust.
  */
 
 import { createRandom, buildPortfolio } from "./portfolio.js";
@@ -92,7 +105,7 @@ export function runSensitivityAnalysis({
   const rankSum = new Map(ids.map(id => [id, 0]));
   const rankMin = new Map(ids.map(id => [id, Number.POSITIVE_INFINITY]));
   const rankMax = new Map(ids.map(id => [id, 0]));
-  /** For «پروژه جایگزین»: who tends to appear when project X does not. */
+  /** Substitute tracking: who tends to appear when project X does not. */
   const substitutes = new Map(ids.map(id => [id, new Map()]));
 
   const baselineIds = new Set(
@@ -248,20 +261,24 @@ export function runSensitivityAnalysis({
       projectId: id,
       projectName: project.name,
       inBaselinePortfolio: inBaseline,
-      /** درصد سناریوهای انتخاب */
+      /** Percentage of scenarios in which this project made the portfolio. */
       selectionRatePercent: selectionRate,
-      /** بررسی پایداری عضویت پروژه‌ها در سبد */
+      /**
+       * Membership stability, 0..1. For a baseline member this is how often it
+       * stayed in; for a non-member, how often it stayed out. Either way, 1
+       * means "the perturbations never changed this project's fate".
+       */
       membershipStability: inBaseline
         ? round(selectionRate / 100, 3)
         : round(1 - selectionRate / 100, 3),
       averageRank: round(rankSum.get(id) / scenarios, 2),
-      /** بررسی رتبه‌برگشتی: the spread the ranking shows across scenarios. */
+      /** Rank reversal: the spread this project's rank shows across scenarios. */
       rankRange: {
         best: rankMin.get(id) === Number.POSITIVE_INFINITY ? null : rankMin.get(id),
         worst: rankMax.get(id) || null,
         reversal: (rankMax.get(id) || 0) - (rankMin.get(id) || 0)
       },
-      /** پروژه جایگزین */
+      /** The project that most often takes this one's place when it drops out. */
       substitute: substituteTally.length > 0
         ? {
             projectId: substituteTally[0][0],
@@ -273,7 +290,7 @@ export function runSensitivityAnalysis({
   });
 
   /**
-   * حساسیت به افزایش هزینه.
+   * COST SENSITIVITY.
    *
    * Cost is measured against portfolio *membership*, not rank: PROMETHEE ranks
    * on criterion performance and never reads `budget`, so a cost sweep would
@@ -375,16 +392,15 @@ export function runSensitivityAnalysis({
     seed,
     projects: perProject.map(entry => ({
       ...entry,
-      /** حداقل بودجه لازم برای ورود */
+      /** Smallest budget cap at which this project still enters the portfolio. */
       minimumEntryBudget: minimumEntryBudget(entry.projectId),
-      /** حساسیت به تغییر وزن‌ها — mean rank shift under weight perturbation. */
+      /** Mean rank shift under weight perturbation. Higher = less stable. */
       weightSensitivity: weightSensitivity.get(entry.projectId) ?? 0,
-      /** حساسیت به آستانه‌های ترجیح */
+      /** Mean rank shift under preference-threshold perturbation. */
       thresholdSensitivity: thresholdSensitivity.get(entry.projectId) ?? 0,
       /**
-       * حساسیت به افزایش هزینه — loss of portfolio membership per unit of
-       * cost overrun. 0 means the project holds its place; 1 means a 100%
-       * overrun would fully displace it.
+       * Loss of portfolio membership per unit of cost overrun.
+       * 0 = the project holds its place; 1 = a 100% overrun fully displaces it.
        */
       costSensitivity: costSensitivity.get(entry.projectId) ?? 0
     })),
@@ -404,8 +420,8 @@ export function runSensitivityAnalysis({
 }
 
 /**
- * آزمون ورود و حذف پروژه — re-run the ranking with one project removed and
- * report whether the relative order of the survivors changed.
+ * ADD/DROP TEST — re-run the ranking with one project removed and report
+ * whether the relative order of the survivors changed.
  *
  * A well-behaved model should not reorder unrelated projects when an
  * irrelevant alternative leaves the set; PROMETHEE II can, so the appendix is

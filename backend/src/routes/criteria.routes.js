@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import { Router } from "express";
 
 import { PERMISSION } from "../config/roles.js";
@@ -19,7 +27,7 @@ router.get(
 
 /**
  * The full model: dimensions, the thirty-seven preferential criteria and the
- * mandatory gates of «فیلتر شماره یک».
+ * mandatory gates of filter 1.
  */
 router.get(
   "/model",
@@ -35,7 +43,7 @@ router.get(
 
 /**
  * Rewriting the official weights requires `criteria:write`, which only the
- * expert and admin roles hold — «تعریف شاخص، مقیاس، جهت و منبع داده» is a
+ * expert and admin roles hold. Defining indicators and their weights is a
  * governed act, not a UI preference.
  */
 router.put(

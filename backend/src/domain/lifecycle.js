@@ -1,15 +1,28 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
- * Forward-looking evaluation of half-finished projects, and multi-year
+ * FORWARD-LOOKING EVALUATION of in-progress projects, plus multi-year
  * life-cycle cost.
  *
- * پیوست شماره دو، نکته ۱: «پروژه‌های نیمه‌تمام نباید صرفاً به دلیل هزینه‌های
- * گذشته، امتیاز ترجیحی دریافت کنند. ارزیابی آن‌ها باید بر پایه هزینه‌ها و
- * منافع آینده انجام شود» — the sunk-cost fallacy, named explicitly.
+ * Appendix 2, note 1 names the sunk-cost fallacy explicitly: half-finished
+ * projects must not receive preferential scoring merely because money has
+ * already been spent on them; they must be assessed on FUTURE costs and
+ * benefits.
  *
- * The consequence for the code is concrete: `progress` and money already spent
- * never enter the continuation decision. What enters is the *incremental*
- * trade-off — the cost of finishing versus the cost of stopping — which is the
- * only comparison that is still open to the decision maker.
+ * The consequence for this code is concrete and load-bearing: `progress` and
+ * money already spent NEVER enter the continuation decision. What enters is the
+ * incremental trade-off — the cost of finishing versus the cost of stopping —
+ * because that is the only comparison still open to the decision maker.
+ *
+ * `sunkCostExcluded` is reported in the output purely so a reviewer can see
+ * that the figure was identified and deliberately left out. Do not feed it back
+ * into any calculation.
  */
 
 import { planningHorizon } from "../data/policy.js";
@@ -156,8 +169,8 @@ export function evaluateContinuation(project, horizon = planningHorizon) {
   return {
     projectId: String(project.id),
     /**
-     * Restated for the report, never used as an input: the appendix wants the
-     * sunk figure visible so a reviewer can see it was excluded on purpose.
+     * Restated for the report; NEVER used as an input. The appendix wants the
+     * sunk figure visible so a reviewer can confirm it was excluded on purpose.
      */
     sunkCostExcluded: round(
       (project.budget ?? 0) - costToComplete,

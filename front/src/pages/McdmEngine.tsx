@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { WeightSliders } from '../components/mcdm/WeightSliders';
 import { RankingTable } from '../components/mcdm/RankingTable';
@@ -15,7 +23,7 @@ import { faNum, faPercent } from '../utils/format';
 export function McdmEngine() {
   const { criteria, projects } = useData();
 
-  /** The شیوه‌نامه's own default weights, as served by the backend. */
+  /** The directive's own default weights, as served by the backend. */
   const initialWeights = useMemo(
     () =>
       criteria.reduce(

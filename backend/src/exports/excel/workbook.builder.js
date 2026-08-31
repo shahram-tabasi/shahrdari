@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
  * Workbook Builder
  *
@@ -178,9 +186,10 @@ function finalizeWorkbook(workbook) {
 
             oddHeader:
 
-                "&LMunicipality AI Platform" +
+                // Excel header codes: &L = left, &C = centre, &R = right.
+                `&L${APP_INFO.company}` +
 
-                "&CExecutive Report" +
+                `&C${APP_INFO.client}` +
 
                 "&RGenerated",
 
