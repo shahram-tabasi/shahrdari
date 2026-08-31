@@ -103,12 +103,34 @@ function describeResponder(result) {
     .join('\n');
 }
 
-const INTERCEPTED =
-  'The reply carries no X-Request-Id, so this API did not write it.\n' +
-  '        Either another program holds this port, or software on this machine\n' +
-  '        is inspecting local web traffic and answering in the server\'s place.\n' +
-  '        Endpoint-security suites do this; exclude localhost from their web\n' +
-  '        scanning and try again.';
+/**
+ * Explain a reply that arrived but was not written by this API.
+ *
+ * The `X-Powered-By: Express` header narrows it down decisively: this API
+ * strips that header, so its presence means a DIFFERENT Node application holds
+ * the port. Without it, an interceptor sitting in front of local traffic is the
+ * likelier explanation. The two have different fixes, so they get different
+ * advice rather than one hedged paragraph.
+ */
+function explainForeignReply(result, port) {
+  const anotherNodeApp = result.headers?.get('x-powered-by');
+
+  return anotherNodeApp
+    ? 'The reply carries no X-Request-Id but does carry X-Powered-By, which this\n' +
+        '        API strips. A DIFFERENT Node/Express application is holding this port.\n' +
+        '        Find and stop it:\n' +
+        `          Windows : netstat -ano | findstr :${port}\n` +
+        '                    tasklist /FI "PID eq <pid>"\n' +
+        '                    taskkill /PID <pid> /F\n' +
+        `          macOS   : lsof -nP -iTCP:${port} -sTCP:LISTEN\n` +
+        `          Linux   : ss -lntp | grep :${port}\n` +
+        "        Then start this project's backend again."
+    : 'The reply carries no X-Request-Id, so this API did not write it.\n' +
+        '        Either another program holds this port, or software on this machine\n' +
+        "        is inspecting local web traffic and answering in the server's place.\n" +
+        '        Endpoint-security suites do this; exclude localhost from their web\n' +
+        '        scanning and try again.';
+}
 
 console.log(`\nBackend : ${backendUrl}`);
 console.log(`Vite    : ${viteUrl}\n`);
@@ -131,7 +153,7 @@ if (!health.ok) {
     'backend is reachable',
     false,
     `HTTP ${health.status} — something answered on port ${backendPort}, but it is not this API.\n` +
-      `        ${INTERCEPTED}\n` +
+      `        ${explainForeignReply(health, backendPort)}\n` +
       describeResponder(health)
   );
 } else {
@@ -177,7 +199,7 @@ if (!proxied.ok) {
       (proxied.fromOurServer
         ? '        Start the dev server from the front directory so it loads\n' +
           '        front/vite.config.ts and installs the /api proxy.'
-        : `        ${INTERCEPTED}`) +
+        : `        ${explainForeignReply(proxied, vitePort)}`) +
       '\n' +
       describeResponder(proxied)
   );
@@ -210,7 +232,7 @@ if (!direct.ok) {
     'backend accepts a browser request from the dev-server origin',
     false,
     `HTTP ${direct.status} — the reply did not come from this API.\n` +
-      `        ${INTERCEPTED}\n` +
+      `        ${explainForeignReply(direct, backendPort)}\n` +
       describeResponder(direct)
   );
 } else if (direct.status === 401 || direct.status === 200) {

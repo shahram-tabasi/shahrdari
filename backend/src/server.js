@@ -18,6 +18,19 @@ import * as audit from "./services/audit.service.js";
  * log aggregator.
  */
 const server = app.listen(env.app.port, () => {
+  /*
+   * Express 5 invokes this callback even when the bind FAILED, with
+   * `server.listening` still false; the 'error' event follows immediately
+   * after. Printing the banner unconditionally therefore announces a healthy
+   * start for a server that never came up — the operator sees the port, the
+   * configuration and no error, and goes looking for the fault everywhere
+   * except the one place it is. Print only once the socket is really open and
+   * let the error handler below speak for the failure.
+   */
+  if (!server.listening) {
+    return;
+  }
+
   const configuration = describe();
 
   console.log(
@@ -44,6 +57,50 @@ const server = app.listen(env.app.port, () => {
     action: "server.started",
     detail: configuration
   });
+});
+
+/**
+ * Listen errors.
+ *
+ * Without this, a port that is already taken surfaces as a raw stack trace or,
+ * under `node --watch`, as a bare "Completed running" line that looks like an
+ * ordinary exit. Both leave the operator hunting for a problem the server
+ * already knows the answer to, so name the port, name the cause, and name the
+ * command that identifies the holder.
+ */
+server.on("error", error => {
+  if (error.code === "EADDRINUSE") {
+    console.error(
+      [
+        "",
+        `Port ${env.app.port} is already in use, so this server did not start.`,
+        "",
+        "Another program owns it. Identify it with:",
+        `  Windows : netstat -ano | findstr :${env.app.port}`,
+        "            tasklist /FI \"PID eq <pid>\"",
+        `  macOS   : lsof -nP -iTCP:${env.app.port} -sTCP:LISTEN`,
+        `  Linux   : ss -lntp | grep :${env.app.port}`,
+        "",
+        "Then stop that program, or run this server on a different port with",
+        `PORT=<port> — in which case point the front end at it too, either by`,
+        "updating the proxy target in front/vite.config.ts or by setting",
+        "VITE_API_BASE_URL for the dev server.",
+        ""
+      ].join("\n")
+    );
+
+    process.exit(1);
+  }
+
+  if (error.code === "EACCES") {
+    console.error(
+      `Port ${env.app.port} requires elevated privileges. Use a port above 1023.`
+    );
+
+    process.exit(1);
+  }
+
+  throw error;
 });
 
 /**
