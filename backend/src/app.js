@@ -77,10 +77,34 @@ app.use(
  */
 const allowedOrigins = new Set(env.security.corsAllowedOrigins);
 
+/**
+ * Loopback origins, allowed in DEVELOPMENT ONLY and on any port.
+ *
+ * Widening the CORS_ALLOWED_ORIGINS default is not enough on its own: a
+ * developer whose `.env` predates that change keeps the two origins their file
+ * lists, and Vite moves to 5174 or beyond whenever 5173 is taken. The result is
+ * a browser that is refused by the API for a reason that has nothing to do with
+ * the application.
+ *
+ * Only loopback hosts match, and only when NODE_ENV is not production, so this
+ * cannot widen a deployed environment: an attacker's page is served from a real
+ * hostname and never matches. Production continues to accept nothing beyond its
+ * explicit allowlist.
+ */
+const LOOPBACK_ORIGIN = /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/;
+
+function isAllowedOrigin(origin) {
+  if (allowedOrigins.has(origin)) {
+    return true;
+  }
+
+  return !env.app.isProduction && LOOPBACK_ORIGIN.test(origin);
+}
+
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.has(origin)) {
+      if (!origin || isAllowedOrigin(origin)) {
         return callback(null, true);
       }
 
