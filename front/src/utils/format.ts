@@ -1,11 +1,19 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 const FA_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
 
-/** تبدیل تمام ارقام لاتین یک رشته به ارقام فارسی */
+/** Convert every Latin digit in a string to its Persian equivalent. */
 export function fa(value: string | number): string {
   return String(value).replace(/\d/g, (d) => FA_DIGITS[Number(d)]);
 }
 
-/** عدد با جداکننده هزارگان و ارقام فارسی */
+/** Number with thousands separators, rendered in Persian digits. */
 export function faNum(value: number, fractionDigits = 0): string {
   const fixed = value.toFixed(fractionDigits);
   const [int, dec] = fixed.split('.');
@@ -17,7 +25,7 @@ export function faPercent(value: number, fractionDigits = 0): string {
   return `${faNum(value, fractionDigits)}٪`;
 }
 
-/** میلیارد تومان */
+/** Formats a figure in billion Toman, the unit used throughout the system. */
 export function faBudget(value: number): string {
   return `${faNum(value)} میلیارد تومان`;
 }

@@ -1,26 +1,49 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import React, { useState } from 'react';
 import { RefreshCwIcon, SparklesIcon } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { chatWithAi } from '../../services/api';
+import { runAiTask } from '../../services/api';
 
 export function AiSummaryCard() {
   const [state, setState] = useState<'idle' | 'thinking' | 'done'>('idle');
   const [summary, setSummary] = useState('');
   const [error, setError] = useState<string | null>(null);
+  /**
+   * The model's answer is a suggestion pending expert review, and the UI has
+   * to say so: every language-model output is a suggestion, never a finding.
+   */
+  const [notice, setNotice] = useState<string | null>(null);
 
   const run = async () => {
     setState('thinking');
     setError(null);
 
     try {
-      const result = await chatWithAi(
-        'با استفاده از تمام داده‌های فعلی سامانه، وضعیت سبد پروژه‌ها، بودجه، ریسک، عدالت فضایی و مهم‌ترین اقدامات پیشنهادی را به فارسی و با اعداد دقیق تحلیل کن.'
-      );
-      setSummary(result.response.output);
+      const result = await runAiTask({
+        // `explainResult` is one of the tasks the directive permits: the model
+        // explains the engine's output, it does not produce the ranking.
+        task: 'explainResult',
+        message:
+          'نتیجه رتبه‌بندی و وضعیت سبد پروژه‌ها را برای مدیران به زبان ساده توضیح بده: چه چیزی رتبه‌ها را تعیین کرده، کجا محدودیت‌ها اثر گذاشته‌اند و کدام موارد نیازمند توجه هستند.'
+      });
+
+      setSummary(result.output);
+      setNotice(result.notice ?? null);
       setState('done');
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'تحلیل هوشمند ناموفق بود.');
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'تحلیل هوشمند ناموفق بود.'
+      );
       setState('idle');
     }
   };
@@ -63,9 +86,16 @@ export function AiSummaryCard() {
             ))}
           </div>
         ) : summary ? (
-          <p className="whitespace-pre-wrap rounded-lg bg-white/6 px-5 py-5 text-xs leading-7 text-white/80">
-            {summary}
-          </p>
+          <div className="space-y-2">
+            <p className="whitespace-pre-wrap rounded-lg bg-white/6 px-5 py-5 text-xs leading-7 text-white/80">
+              {summary}
+            </p>
+            {notice ? (
+              <p className="rounded-lg bg-amber-400/12 px-4 py-2.5 text-[11px] leading-6 text-amber-200">
+                {notice}
+              </p>
+            ) : null}
+          </div>
         ) : (
           <p className="rounded-lg border border-dashed border-white/15 px-5 py-6 text-xs leading-6 text-white/45">
             برای دریافت تحلیل زنده مبتنی بر تمام داده‌های بکند، دکمه تولید تحلیل هوشمند را بزنید.

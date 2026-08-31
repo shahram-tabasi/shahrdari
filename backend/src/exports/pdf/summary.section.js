@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
  * PDF Executive Summary Section
  *
@@ -8,6 +16,8 @@
  * - Top ranked projects
  * - Key findings
  */
+
+import { attribution } from "../../config/branding.js";
 
 import {
     formatDecimal,
@@ -302,8 +312,7 @@ safeNumber(project.score)
 
                 <li>
 
-                    Executive report generated automatically
-                    by Municipality AI Decision Support Platform.
+                    ${attribution("en")}
 
                 </li>
 

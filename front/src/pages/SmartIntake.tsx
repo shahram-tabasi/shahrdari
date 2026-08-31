@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -17,7 +25,7 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { ConfidenceMeter } from '../components/intake/ConfidenceMeter';
 import { faNum, faPercent } from '../utils/format';
-import { chatWithAi } from '../services/api';
+import { runAiTask } from '../services/api';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
 const SAMPLE = `احداث تقاطع غیرهمسطح در محل برخورد بلوار جمهوری و خیابان شهید کامیاب با هدف کاهش گره ترافیکی ورودی شرقی شهر کرمان. حجم تردد روزانه بیش از ۸۰ هزار سفر برآورد شده و طبق مطالعات مهندسی ترافیک، تاخیر متوسط در ساعات اوج ۴.۲ دقیقه است. پروژه شامل تملک ۱٬۲۰۰ مترمربع، جابجایی تاسیسات آب و برق و اجرای دو رمپ دسترسی است. مدت اجرا ۲۴ ماه و اعتبار پیش‌بینی‌شده ۹۴۰ میلیارد تومان از محل اوراق مشارکت شهرداری. ملاحظات پدافند غیرعامل و مسیر امداد بیمارستان باهنر لحاظ شده است.`;
@@ -53,16 +61,24 @@ export function SmartIntake() {
   const [phase, setPhase] = useState<'idle' | 'loading' | 'done'>('idle');
   const [analysis, setAnalysis] = useState('');
   const [error, setError] = useState<string | null>(null);
+  /** The pending-review notice that must accompany every model output. */
+  const [notice, setNotice] = useState<string | null>(null);
 
   const analyze = async () => {
     setPhase('loading');
     setError(null);
 
     try {
-      const result = await chatWithAi(
-        `این شرح پروژه را با توجه به تمام داده‌های فعلی سامانه، پروژه‌های موجود، معیارهای MCDM، محله‌ها، سوابق تصمیم و سناریوها تحلیل کن. اطلاعات کلیدی، ریسک‌ها، امتیازهای پیشنهادی و انطباق راهبردی را دقیق و به فارسی ارائه بده:\n\n${text}`
-      );
-      setAnalysis(result.response.output);
+      const result = await runAiTask({
+        // "Detect conflicts or gaps in a project record" — the model flags what is
+        // missing or contradictory. It does not score the project and does not
+        // fill in the gaps it finds; both are forbidden without human approval.
+        task: 'detectConflicts',
+        message: `شرح پروژه زیر را بررسی کن و اطلاعات کلیدی، نواقص شناسنامه، تعارض‌ها و ریسک‌های آن را فهرست کن. برای هیچ داده مفقودی مقدار حدس نزن؛ فقط مشخص کن چه چیزی ثبت نشده است:\n\n${text}`
+      });
+
+      setAnalysis(result.output);
+      setNotice(result.notice ?? null);
       setPhase('done');
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'تحلیل پروژه ناموفق بود.');
@@ -185,6 +201,11 @@ export function SmartIntake() {
                 className="space-y-6">
                   <div className="rounded-lg bg-canvas p-4 dark:bg-white/5">
                     <MarkdownRenderer content={analysis} />
+                    {notice ? (
+                      <p className="mt-3 rounded-lg bg-amber-500/10 px-4 py-2.5 text-[11px] leading-6 text-amber-700 dark:text-amber-400">
+                        {notice}
+                      </p>
+                    ) : null}
                   </div>
                 
                   <div className="flex items-center justify-between gap-6">

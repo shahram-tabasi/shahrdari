@@ -1,4 +1,27 @@
-import type { DashboardData } from '../types';
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
+import { reportFileSlug } from '../config/branding';
+import type {
+  AiStatus,
+  AiSuggestion,
+  AuditEntryRecord,
+  CriteriaModel,
+  CurrentUser,
+  DashboardData,
+  EvaluationResult,
+  PortfolioRequest,
+  PortfolioResult,
+  RankingRequest,
+  RankingResult,
+  SensitivityResult,
+  SessionInfo
+} from '../types';
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -13,6 +36,29 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)
 
 function wait(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Session token.
+ *
+ * Held in memory rather than in localStorage: a token in localStorage is
+ * readable by any script that ends up running on the page, and survives long
+ * after the user has walked away from the machine. Keeping it in a module
+ * variable means a reload requires a fresh session, which is the correct
+ * trade-off for a municipal decision system.
+ */
+let sessionToken: string | null = null;
+
+export function setSessionToken(token: string | null) {
+  sessionToken = token;
+}
+
+export function hasSession() {
+  return sessionToken !== null;
+}
+
+function authHeaders(): Record<string, string> {
+  return sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {};
 }
 
 /**
@@ -38,6 +84,7 @@ async function attemptRequest<T>(path: string, init?: RequestInit): Promise<T> {
       headers: {
         Accept: 'application/json',
         ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...authHeaders(),
         ...init?.headers
       }
     });
@@ -67,6 +114,18 @@ async function attemptRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!response.ok || !payload.success) {
+    // Authentication and authorisation failures are not transient and are not
+    // the user's typo — they need their own message so the UI can prompt for a
+    // session rather than showing a generic failure.
+    if (response.status === 401) {
+      sessionToken = null;
+      throw new Error('نشست شما معتبر نیست یا منقضی شده است؛ دوباره وارد شوید.');
+    }
+
+    if (response.status === 403) {
+      throw new Error('دسترسی لازم برای این عملیات را ندارید.');
+    }
+
     const details = payload.errors?.map(error => error.message).join(' ');
     // A real, well-formed error response from our own backend — not a
     // transient glitch, so no point retrying it.
@@ -116,39 +175,115 @@ export function getDashboard(): Promise<DashboardData> {
   return request<DashboardData>('/dashboard');
 }
 
-export function chatWithAi(message: string) {
-  return request<{
-    context: unknown;
-    response: {
-      id: string;
-      model: string;
-      output: string;
-      usage: unknown;
-      createdAt: string;
-    };
-  }>('/ai/chat', {
-    method: 'POST',
-    body: JSON.stringify({ message })
-  });
-}
-
-export function createRanking(weights?: Record<string, number>) {
-  return request<{ weights: Record<string, number>; projectCount: number; projects: unknown[] }>(
-    '/decisions/rankings',
-    { method: 'POST', body: JSON.stringify(weights ? { weights } : {}) }
-  );
-}
-
-export function optimizePortfolio(input: {
-  budget: number;
-  weights?: Record<string, number>;
-  includeProjectIds?: string[];
-  excludeProjectIds?: string[];
-}) {
-  return request('/decisions/portfolio', {
+/**
+ * Open a session.
+ *
+ * In production the backend rejects this route and the token comes from the
+ * municipality's OIDC provider; this is the development path only.
+ */
+export async function openSession(input: {
+  userId: string;
+  name: string;
+  role: string;
+  districts?: string[];
+}): Promise<SessionInfo> {
+  const session = await request<SessionInfo>('/auth/session', {
     method: 'POST',
     body: JSON.stringify(input)
   });
+
+  setSessionToken(session.token);
+
+  return session;
+}
+
+export function getCurrentUser(): Promise<CurrentUser> {
+  return request<CurrentUser>('/auth/me');
+}
+
+/**
+ * The full criteria model: eight dimensions, thirty-seven preferential
+ * criteria and the mandatory gates of filter 1.
+ */
+export function getCriteriaModel(): Promise<CriteriaModel> {
+  return request<CriteriaModel>('/criteria/model');
+}
+
+/** EVALUATION — screening, data quality and life-cycle assessment. */
+export function evaluateProjects(projectIds?: string[]) {
+  return request<EvaluationResult>('/decisions/evaluations', {
+    method: 'POST',
+    body: JSON.stringify(projectIds ? { projectIds } : {})
+  });
+}
+
+/** FILTER 2 — ranking. Weights may be given directly or via an AHP matrix. */
+export function createRanking(input: RankingRequest = {}) {
+  return request<RankingResult>('/decisions/rankings', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+/** FILTER 3 — portfolio construction under the full constraint set. */
+export function optimizePortfolio(input: PortfolioRequest) {
+  return request<PortfolioResult>('/decisions/portfolio', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+/** Sensitivity and stability analysis. */
+export function analyzeSensitivity(input: PortfolioRequest & { scenarios?: number }) {
+  return request<SensitivityResult>('/decisions/sensitivity', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+/** Whether the language model is available, and what it is allowed to do. */
+export function getAiStatus() {
+  return request<AiStatus>('/ai/status');
+}
+
+/**
+ * Run an assistive AI task.
+ *
+ * The response is a *suggestion*: it carries `reviewStatus` and
+ * `appliedToDecision` and has no effect on any score or portfolio until an
+ * authorised expert accepts it.
+ */
+export function runAiTask(input: {
+  task: string;
+  message: string;
+  projectIds?: string[];
+}) {
+  return request<AiSuggestion>('/ai/tasks', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+/** Expert review — accept or reject a model suggestion. */
+export function reviewAiSuggestion(
+  id: string,
+  input: { status: 'accepted' | 'rejected'; reason: string; correctedOutput?: string }
+) {
+  return request<AiSuggestion>(`/ai/suggestions/${id}/review`, {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+export function listAiSuggestions(status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+
+  return request<AiSuggestion[]>(`/ai/suggestions${query}`);
+}
+
+/** Audit trail. */
+export function getAuditTrail(limit = 100) {
+  return request<AuditEntryRecord[]>(`/audit?limit=${limit}`);
 }
 /**
  * Export report file
@@ -167,7 +302,8 @@ export async function exportReport(
       method: 'POST',
 
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...authHeaders()
       },
 
       body: JSON.stringify(payload)
@@ -205,8 +341,10 @@ export async function exportReport(
       : type;
 
 
+  // Filename slug is ASCII-only on purpose — Persian characters in a
+  // download filename break on some Windows/browser combinations.
   link.download =
-    `Smart-VAP-Report-${Date.now()}.${extension}`;
+    `${reportFileSlug}-${Date.now()}.${extension}`;
 
 
   document.body.appendChild(link);

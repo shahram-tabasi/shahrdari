@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 /**
  * Export Controller
  *
@@ -26,6 +34,8 @@
 import {
     createFileName
 } from "../exports/shared/helper.js";
+
+import { APP_INFO } from "../exports/shared/constants.js";
 
 
 /**
@@ -567,13 +577,16 @@ function buildExcelReport(report = {}) {
 
     return {
 
+        // Bilingual defaults. A caller may override either, but when it does
+        // not, the report still carries the product and client names rather
+        // than a placeholder.
         title:
             report.title ??
-            "Municipality Executive Report",
+            APP_INFO.name,
 
         subtitle:
             report.subtitle ??
-            "Smart-VAP",
+            `${APP_INFO.client} — ${APP_INFO.company}`,
 
         dashboard,
 

@@ -1,44 +1,157 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import * as criteriaRepository from "../repositories/criteria.repository.js";
+import { DIRECTION } from "../data/criteria.js";
 import HttpError from "../utils/http-error.js";
 
 /**
- * Retrieve all criteria.
+ * CRITERIA MANAGEMENT — defining indicators, scales, directions and sources.
+ *
+ * The dimension list stays the frontend's weighting surface (`key`, `label`,
+ * `hint`, `weight`), while the full model — leaf criteria, directions,
+ * thresholds and mandatory gates — is served alongside it.
+ */
+
+/**
+ * The eight dimensions.
  *
  * @returns {Promise<Array>}
  */
 export async function getAllCriteria() {
-  return criteriaRepository.findAll();
+  return criteriaRepository.findDimensions();
 }
 
 /**
- * Retrieve a criterion by its identifier.
+ * The complete criteria model.
+ *
+ * @returns {Promise<Object>}
+ */
+export async function getCriteriaModel() {
+  const [dimensions, criteria, mandatory] = await Promise.all([
+    criteriaRepository.findDimensions(),
+    criteriaRepository.findCriteria(),
+    criteriaRepository.findMandatoryCriteria()
+  ]);
+
+  return {
+    basis: "شیوه‌نامه شناسایی، انتخاب، اولویت‌بندی و تعریف سبد پروژه — ویرایش پنجم",
+    weighting: {
+      defaultMethod: "rank-order-centroid",
+      note: "وزن پیش‌فرض ابعاد از رتبه‌ای که شیوه‌نامه برای هر بعد تعیین کرده استخراج می‌شود و با ماتریس مقایسات زوجی (AHP) قابل بازنگری است."
+    },
+    dimensions,
+    criteria,
+    mandatoryCriteria: mandatory,
+    counts: {
+      dimensions: dimensions.length,
+      preferential: criteria.length,
+      mandatory: mandatory.length
+    }
+  };
+}
+
+/**
+ * Retrieve one dimension or one leaf criterion, by key or code.
  *
  * @param {string} id
  * @returns {Promise<Object>}
  */
 export async function getCriterionById(id) {
-  const criterion = await criteriaRepository.findById(id);
+  const criterion = await criteriaRepository.findByIdentifier(id);
 
   if (!criterion) {
-    throw new HttpError(404, "Criterion not found.");
+    throw new HttpError(404, "معیار مورد نظر یافت نشد.");
   }
 
   return criterion;
 }
 
 /**
- * Replace the entire criteria collection.
+ * Replace the dimension weights.
+ *
+ * Changing an official criterion set is a governed act, so this validates
+ * rather than trusting the caller: unknown keys, malformed weights and unknown
+ * directions are all rejected. Leaf criteria are not editable over the API —
+ * they are the directive's own list, and changing them is an amendment to the
+ * directive, not a configuration tweak.
  *
  * @param {Array} collection
  * @returns {Promise<Array>}
  */
 export async function replaceCriteria(collection) {
-  if (!Array.isArray(collection)) {
+  if (!Array.isArray(collection) || collection.length === 0) {
+    throw new HttpError(400, "فهرست ابعاد باید آرایه‌ای غیرخالی باشد.");
+  }
+
+  const existing = await criteriaRepository.findDimensions();
+  const known = new Map(existing.map(dimension => [dimension.key, dimension]));
+  const errors = [];
+
+  const updated = collection.map((entry, index) => {
+    const base = known.get(entry?.key);
+
+    if (!base) {
+      errors.push({
+        field: `[${index}].key`,
+        message: `بعد «${entry?.key ?? "نامشخص"}» در مدل معیارهای شیوه‌نامه تعریف نشده است.`
+      });
+
+      return null;
+    }
+
+    if (!Number.isFinite(entry.weight) || entry.weight < 0 || entry.weight > 100) {
+      errors.push({
+        field: `[${index}].weight`,
+        message: "وزن بعد باید عددی بین ۰ و ۱۰۰ باشد."
+      });
+
+      return null;
+    }
+
+    if (
+      entry.direction !== undefined &&
+      entry.direction !== DIRECTION.BENEFIT &&
+      entry.direction !== DIRECTION.COST
+    ) {
+      errors.push({
+        field: `[${index}].direction`,
+        message: "جهت معیار باید benefit یا cost باشد."
+      });
+
+      return null;
+    }
+
+    // Label, rank and code come from the directive and are not caller-editable.
+    return { ...base, weight: entry.weight };
+  });
+
+  if (errors.length > 0) {
+    throw new HttpError(400, "اعتبارسنجی ابعاد ناموفق بود.", errors);
+  }
+
+  const total = updated.reduce((sum, dimension) => sum + dimension.weight, 0);
+
+  if (!(total > 0)) {
+    throw new HttpError(400, "مجموع وزن ابعاد باید بزرگ‌تر از صفر باشد.");
+  }
+
+  const missing = existing
+    .filter(dimension => !collection.some(entry => entry.key === dimension.key))
+    .map(dimension => dimension.key);
+
+  if (missing.length > 0) {
     throw new HttpError(
       400,
-      "Criteria collection must be an array."
+      "همه ابعاد باید در به‌روزرسانی حضور داشته باشند.",
+      missing.map(key => ({ field: key, message: "این بعد در فهرست ارسالی نیست." }))
     );
   }
 
-  return criteriaRepository.replace(collection);
+  return criteriaRepository.replaceDimensions(updated);
 }

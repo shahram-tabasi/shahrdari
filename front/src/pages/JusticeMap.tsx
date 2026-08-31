@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import React, { useMemo, useState } from 'react';
 import {
   CircleMarker,
@@ -11,7 +19,7 @@ import { faNum, faShortBudget } from '../utils/format';
 
 const KERMAN: [number, number] = [30.2885, 57.0722];
 
-/** طیف رنگ محرومیت: سبز (برخوردار) → زرد → قرمز (محروم) */
+/** Deprivation colour ramp: green (well-served) -> yellow -> red (deprived). */
 function heatColor(deprivation: number): string {
   if (deprivation >= 0.75) return '#E53935';
   if (deprivation >= 0.6) return '#FB8C00';

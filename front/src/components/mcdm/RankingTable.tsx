@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -10,7 +18,7 @@ import {
 import { Card, CardHeader } from '../ui/Card';
 import { Badge, StatusBadge } from '../ui/Badge';
 import { useData } from '../../contexts/DataContext';
-import type { RankedProject } from '../../utils/scoring';
+import type { RankedProject } from '../../types';
 import { faNum, faShortBudget } from '../../utils/format';
 
 interface Props {
@@ -104,12 +112,15 @@ export function RankingTable({
                     <span
                     className={[
                     'inline-grid h-8 w-8 place-items-center rounded-lg text-xs font-extrabold',
-                    row.rank <= 3 ?
+                    row.rank !== null && row.rank <= 3 ?
                     'bg-amber-500 text-navy-900' :
                     'bg-navy-800/8 text-navy-800 dark:bg-white/10 dark:text-white/70'].
                     join(' ')}>
                     
-                      {faNum(row.rank)}
+                      {/* Statutory and emergency projects are never ranked
+                          against the other classes, so they show no rank
+                          rather than a fabricated one. */}
+                      {row.rank === null ? '—' : faNum(row.rank)}
                     </span>
                   </td>
                   <td className="py-3 text-right">
@@ -137,12 +148,12 @@ export function RankingTable({
                   <td className="py-3 text-center">
                     <div className="mx-auto w-20">
                       <p className="text-sm font-extrabold text-ink-900 dark:text-white/90">
-                        {faNum(row.finalScore, 1)}
+                        {row.finalScore === null ? 'مسیر مستقل' : faNum(row.finalScore, 1)}
                       </p>
                       <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-navy-800/8 dark:bg-white/10">
                         <motion.span
                         className="block h-full rounded-full bg-navy-800 dark:bg-navy-300"
-                        animate={{ width: `${row.finalScore}%` }}
+                        animate={{ width: `${row.finalScore ?? 0}%` }}
                         transition={{ type: 'spring', stiffness: 200, damping: 26 }} />
                       
                       </span>

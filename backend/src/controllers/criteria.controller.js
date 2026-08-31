@@ -1,3 +1,11 @@
+/*
+ * Simorgh Iranian Smart Technology Co.
+ * شرکت سیمرغ فناوری هوشمند ایرانیان
+ *
+ * Municipal Project Portfolio Management System
+ * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
+ */
+
 import * as criteriaService from "../services/criteria.service.js";
 import { successResponse } from "../utils/api-response.js";
 
@@ -12,6 +20,25 @@ export async function getAllCriteria(req, res, next) {
       successResponse({
         message: "Criteria retrieved successfully.",
         data: criteria
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Retrieve the full criteria model: dimensions, preferential criteria and the
+ * mandatory gates.
+ */
+export async function getCriteriaModel(req, res, next) {
+  try {
+    const model = await criteriaService.getCriteriaModel();
+
+    res.status(200).json(
+      successResponse({
+        message: "مدل معیارهای شیوه‌نامه بازیابی شد.",
+        data: model
       })
     );
   } catch (error) {
