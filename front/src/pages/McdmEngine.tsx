@@ -231,7 +231,13 @@ export function McdmEngine() {
         null}
       </Modal>
 
-      <ExpertModeModal open={expertOpen} onClose={() => setExpertOpen(false)} />
+      {/* Expert mode returns AHP-derived dimension weights; applying them
+          replaces the slider values and re-runs the ranking. */}
+      <ExpertModeModal
+        open={expertOpen}
+        onClose={() => setExpertOpen(false)}
+        onApply={(derived) => setWeights(derived)} />
+
     </div>);
 
 }

@@ -344,7 +344,7 @@ export function ReportingCenter() {
                 ۳. پروفایل معیارهای پروژه برتر
               </h3>
               <div className="mt-1 [&_text]:fill-ink-700">
-                <RadarPanel primary={ranked[0]} height={240} />
+                <RadarPanel primary={ranked[0] ?? null} height={240} />
               </div>
             </motion.section>
           )}

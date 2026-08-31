@@ -6,13 +6,16 @@
  * Copyright (c) 2025 Simorgh Iranian Smart Technology Co. All rights reserved.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { RefreshCwIcon, SparklesIcon } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { runAiTask } from '../../services/api';
+import { useApp } from '../../contexts/AppContext';
+import { getAiStatus, runAiTask } from '../../services/api';
+import type { AiStatus } from '../../types';
 
 export function AiSummaryCard() {
+  const { t } = useApp();
   const [state, setState] = useState<'idle' | 'thinking' | 'done'>('idle');
   const [summary, setSummary] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +24,22 @@ export function AiSummaryCard() {
    * to say so: every language-model output is a suggestion, never a finding.
    */
   const [notice, setNotice] = useState<string | null>(null);
+  /**
+   * Which model is configured, asked of the backend rather than hardcoded.
+   *
+   * The model is a swappable, self-hosted or hosted OpenAI-compatible
+   * endpoint chosen in `LLM_BASE_URL`/`LLM_MODEL`, so naming a vendor in the
+   * UI would be wrong the moment the municipality points it elsewhere. When no
+   * model is configured the badge says so, which is the honest state: the
+   * decision engines keep working without one.
+   */
+  const [status, setStatus] = useState<AiStatus | null>(null);
+
+  useEffect(() => {
+    // A failure here only means the badge stays neutral; it must not break
+    // the dashboard.
+    void getAiStatus().then(setStatus).catch(() => setStatus(null));
+  }, []);
 
   const run = async () => {
     setState('thinking');
@@ -42,7 +61,7 @@ export function AiSummaryCard() {
       setError(
         requestError instanceof Error
           ? requestError.message
-          : 'تحلیل هوشمند ناموفق بود.'
+          : t('تحلیل هوشمند ناموفق بود.', 'The assisted analysis failed.')
       );
       setState('idle');
     }
@@ -56,14 +75,23 @@ export function AiSummaryCard() {
             <SparklesIcon size={19} />
           </span>
           <div>
-            <h2 className="text-sm font-extrabold">تحلیل هوشمند سبد</h2>
+            <h2 className="text-sm font-extrabold">
+              {t('تحلیل هوشمند سبد', 'Assisted portfolio analysis')}
+            </h2>
             <p className="mt-0.5 text-[11px] text-white/50">
-              تحلیل زنده بر اساس تمام داده‌های پروژه‌ها، معیارها، محله‌ها و سوابق سامانه
+              {t(
+                'تحلیل زنده بر اساس داده‌های پروژه‌ها، معیارها، محله‌ها و سوابق سامانه',
+                'Live analysis over the project, criteria, neighbourhood and history data'
+              )}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge tone="amber" className="bg-amber-500/20 text-amber-300">OpenAI</Badge>
+          <Badge tone="amber" className="bg-amber-500/20 text-amber-300">
+            {status?.available
+              ? status.model ?? t('مدل زبانی', 'Language model')
+              : t('مدل زبانی پیکربندی نشده', 'No model configured')}
+          </Badge>
           <button
             type="button"
             onClick={() => void run()}
@@ -73,7 +101,11 @@ export function AiSummaryCard() {
             {state === 'thinking'
               ? <RefreshCwIcon size={15} className="animate-spin" />
               : <SparklesIcon size={15} />}
-            {state === 'thinking' ? 'در حال تحلیل…' : state === 'done' ? 'تحلیل مجدد' : 'تولید تحلیل هوشمند'}
+            {state === 'thinking'
+              ? t('در حال تحلیل…', 'Analysing…')
+              : state === 'done'
+              ? t('تحلیل مجدد', 'Analyse again')
+              : t('تولید تحلیل هوشمند', 'Generate analysis')}
           </button>
         </div>
       </div>
@@ -98,7 +130,12 @@ export function AiSummaryCard() {
           </div>
         ) : (
           <p className="rounded-lg border border-dashed border-white/15 px-5 py-6 text-xs leading-6 text-white/45">
-            برای دریافت تحلیل زنده مبتنی بر تمام داده‌های بکند، دکمه تولید تحلیل هوشمند را بزنید.
+            {status && !status.available
+              ? status.degradedMode
+              : t(
+                  'برای دریافت تحلیل زنده بر پایه داده‌های سامانه، دکمه تولید تحلیل هوشمند را بزنید.',
+                  'Press “Generate analysis” for a live explanation based on the system’s data.'
+                )}
           </p>
         )}
         {error ? <p className="mt-3 text-xs text-rose-300">{error}</p> : null}

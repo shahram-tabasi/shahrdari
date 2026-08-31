@@ -57,8 +57,28 @@ const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
 
-  /** Comma-separated allowlist of browser origins. */
-  CORS_ALLOWED_ORIGINS: csv.default("http://localhost:5173,http://127.0.0.1:5173"),
+  /*
+   * Comma-separated allowlist of browser origins. There is no wildcard.
+   *
+   * The default covers the ports Vite actually uses in development: it starts
+   * at 5173 and increments when that port is already taken, which is why a
+   * developer with another project running ends up on 5174 or 5175. Production
+   * MUST set this variable explicitly to the real front-end origin — these
+   * localhost entries are then irrelevant, because a browser never sends
+   * `http://localhost:5173` as the Origin of a production page.
+   */
+  CORS_ALLOWED_ORIGINS: csv.default(
+    [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+      "http://localhost:5176",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174",
+      "http://127.0.0.1:5175",
+      "http://127.0.0.1:5176"
+    ].join(",")
+  ),
 
   /** HMAC key for session tokens and for sealing the audit chain. */
   AUTH_SECRET: z.string().min(32).optional(),

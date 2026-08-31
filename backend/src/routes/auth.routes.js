@@ -44,9 +44,24 @@ const loginSchema = z
   })
   .strict();
 
+/*
+ * Rate limit on session issuance.
+ *
+ * Credential-stuffing and token-farming are what this bounds, so production
+ * keeps it tight. Development is deliberately generous: the front end holds
+ * its token in memory rather than in localStorage, so every full page reload
+ * opens a new session, and a limit of ten would lock a developer out after ten
+ * reloads. Loosening it costs nothing here because this route answers 501 in
+ * production — the tight number below is what a real OIDC callback inherits
+ * when it replaces this handler.
+ */
+const sessionRateLimit = env.app.isProduction
+  ? { name: "auth", windowSeconds: 300, maxRequests: 10 }
+  : { name: "auth", windowSeconds: 300, maxRequests: 200 };
+
 router.post(
   "/session",
-  rateLimit({ name: "auth", windowSeconds: 300, maxRequests: 10 }),
+  rateLimit(sessionRateLimit),
   validate(loginSchema),
   (req, res, next) => {
     if (env.app.isProduction) {

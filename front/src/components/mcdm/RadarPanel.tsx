@@ -22,21 +22,40 @@ import { useApp } from '../../contexts/AppContext';
 import { faNum } from '../../utils/format';
 
 interface Props {
-  primary: Project;
+  /**
+   * The project to plot. Optional on purpose: callers render this panel inside
+   * a report or a comparison view whose ranking may not have been fetched yet,
+   * and an unfinished fetch must show an empty state rather than crash.
+   */
+  primary?: Project | null;
   compare?: Project | null;
   height?: number;
 }
 
 export function RadarPanel({ primary, compare, height = 320 }: Props) {
   const { criteria } = useData();
-  const { theme } = useApp();
+  const { t, theme } = useApp();
   const grid = theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(26,35,126,0.12)';
   const axis = theme === 'dark' ? 'rgba(255,255,255,0.6)' : '#3A4066';
 
+  // Nothing to plot yet — the caller's ranking has not arrived.
+  if (!primary) {
+    return (
+      <div
+        style={{ height }}
+        className="grid place-items-center rounded-xl border border-dashed border-navy-800/12 text-xs text-ink-500 dark:border-white/12 dark:text-white/50"
+      >
+        {t('هنوز پروژه‌ای برای نمایش انتخاب نشده است.', 'No project selected yet.')}
+      </div>
+    );
+  }
+
+  // A criterion the project carries no score for plots as zero rather than as
+  // a gap in the polygon.
   const data = criteria.map((c) => ({
     criterion: c.label,
-    primary: primary.scores[c.key],
-    compare: compare ? compare.scores[c.key] : undefined
+    primary: primary.scores[c.key] ?? 0,
+    compare: compare ? compare.scores[c.key] ?? 0 : undefined
   }));
 
   return (

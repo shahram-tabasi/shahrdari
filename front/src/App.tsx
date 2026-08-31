@@ -9,6 +9,7 @@
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AppProvider } from './contexts/AppContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
 import { AppShell } from './components/layout/AppShell';
 import { Dashboard } from './pages/Dashboard';
@@ -21,20 +22,24 @@ import { ReportingCenter } from './pages/ReportingCenter';
 export function App() {
   return (
     <AppProvider>
-      <DataProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route element={<AppShell />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/intake" element={<SmartIntake />} />
-              <Route path="/mcdm" element={<McdmEngine />} />
-              <Route path="/optimizer" element={<PortfolioOptimizer />} />
-              <Route path="/map" element={<JusticeMap />} />
-              <Route path="/reports" element={<ReportingCenter />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </DataProvider>
+      {/* AuthProvider must wrap DataProvider: every API route requires a
+          session, so no data may be fetched before one exists. */}
+      <AuthProvider>
+        <DataProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route element={<AppShell />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/intake" element={<SmartIntake />} />
+                <Route path="/mcdm" element={<McdmEngine />} />
+                <Route path="/optimizer" element={<PortfolioOptimizer />} />
+                <Route path="/map" element={<JusticeMap />} />
+                <Route path="/reports" element={<ReportingCenter />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </DataProvider>
+      </AuthProvider>
     </AppProvider>);
 
 }
